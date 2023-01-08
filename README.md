@@ -6,4 +6,4 @@ Chapter 26 ‘Notations and Score-making’
 
 Tom Hall, Newton Armstrong, Richard Hoadley
 
-These classes and code is for chapter section: ’26.2 CPWN and graphic notation within SuperCollider’
+These classes and code is for chapter section: ‘26.2 CPWN and graphic notation within SuperCollider’
