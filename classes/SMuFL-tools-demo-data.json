@@ -1,0 +1,31 @@
+{
+	"gClef": {
+		"alternateCodepoint": "U+1D11E",
+		"codepoint": "U+E050",
+		"description": "G clef"
+	},
+
+	"accidentalNatural": {
+		"alternateCodepoint": "U+266E",
+		"codepoint": "U+E261",
+		"description": "Natural"
+	},
+
+	"accidentalFlat": {
+		"alternateCodepoint": "U+266D",
+		"codepoint": "U+E260",
+		"description": "Flat"
+	},
+
+	"noteWhole": {
+		"alternateCodepoint": "U+1D15D",
+		"codepoint": "U+E1D2",
+		"description": "Whole note (semibreve)"
+	},
+	
+	"noteheadBlack": {
+		"alternateCodepoint": "U+1D158",
+		"codepoint": "U+E0A4",
+		"description": "Black notehead"
+	},
+}
