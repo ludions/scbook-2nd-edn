@@ -633,7 +633,8 @@ MITHNoteViewerGui {
 		}
 		{what == \glyphsCol} {
 			if(staticTextsDict.notEmpty){
-				noteTxtBox.stringColor = val
+				noteTxtBox.stringColor = val;
+				accTxtBox.stringColor = val
 			}
 		}
 		{what == \foreground} {
@@ -642,6 +643,7 @@ MITHNoteViewerGui {
 			clefBoxes.do{|i| i.stringColor = foreground};
 			if(staticTextsDict.notEmpty){
 				noteTxtBox.stringColor = foreground;
+				accTxtBox.stringColor = foreground
 			}
 		}
 		^this
