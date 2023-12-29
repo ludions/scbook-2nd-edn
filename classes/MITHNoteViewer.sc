@@ -21,14 +21,14 @@ www.ludions.com
 MITHNoteViewer {
 	var <fontSize, <fontName, <models, <views, <fontBool;
 	var <>mappingClassName, <mapper, <signed, <accidentalsMap, clefWidth;
-	var <winHeight, <winWidth, <noteSlots, <foreground;
+	var <winHeight, <winWidth, <staveSlots, <foreground;
 	var <winModel, <winBackground, <background;
 
-	*new {|noteSlots, winHeight, signed = true, fontName, winPos, mappingClassName|
-		^super.new.init(noteSlots, winHeight, signed, fontName, winPos, mappingClassName);
+	*new {|staveSlots, winHeight, signed = true, fontName, winPos, mappingClassName|
+		^super.new.init(staveSlots, winHeight, signed, fontName, winPos, mappingClassName);
 	}
 
-	init {|argNoteSlots, argWinHeight, argSigned, argFontName, argWinPos, argMappingClassName|
+	init {|argStaveSlots, argWinHeight, argSigned, argFontName, argWinPos, argMappingClassName|
 
 		var idealWinHeight, winModelMargins, winPosInit;
 
@@ -38,7 +38,7 @@ MITHNoteViewer {
 			"The selected or default Font 'Bravura' is not installed".error;
 			"Bravura Font can be downloaded at: https://github.com/steinbergmedia/bravura/".postln;
 		};
-		noteSlots = argNoteSlots ?? 1;
+		staveSlots = argStaveSlots ?? 1;
 		idealWinHeight = argWinHeight ?? 400;
 		signed = argSigned;
 		fontSize = (idealWinHeight / 9.75).floor.asInteger;
@@ -47,8 +47,8 @@ MITHNoteViewer {
 		winHeight = fontSize * 9.75; // same as viewHieght in model
 		clefWidth = 0.75; // wrt fontSize
 
-		winWidth = clefWidth + noteSlots.collect{|i|
-			if(i==(noteSlots-1)){2}{1.5}
+		winWidth = clefWidth + staveSlots.collect{|i|
+			if(i==(staveSlots-1)){2}{1.5}
 		}.sum;
 		winWidth = winWidth * fontSize; // pixels
 
@@ -88,7 +88,7 @@ MITHNoteViewer {
 	gui {
 		var mainView;
 		mainView = ViewCentral.new(Window.new.front, winModel, false).view;
-		views = noteSlots.collect{|i|
+		views = staveSlots.collect{|i|
 			MITHNoteViewerGui(models[i], mainView)
 		};
 		^this;
@@ -128,12 +128,12 @@ MITHNoteViewer {
 
 	makeModels {
 		var viewOffset, viewWidth, clefsBool, widthScaler;
-		widthScaler = if(noteSlots>1){1.5}{2};
-		^noteSlots.collect{|i|
+		widthScaler = if(staveSlots>1){1.5}{2};
+		^staveSlots.collect{|i|
 			clefsBool = (i==0);
 			viewOffset = clefWidth * i.min(1);
 			viewOffset = viewOffset  + (widthScaler * i); // wrt fontSize
-			viewWidth = if(i==(noteSlots-1)){2}{1.5}; // last view is wider
+			viewWidth = if(i==(staveSlots-1)){2}{1.5}; // last view is wider
 
 			MITHNoteViewerModel.new(
 				fontSize,
@@ -184,7 +184,7 @@ MITHNoteViewer {
 
 	addCustom {|pos, slot = 0, stringArr, color|
 		var infoArr, model;
-		slot = slot.min(noteSlots-1);
+		slot = slot.min(staveSlots-1);
 		model = models[slot];
 		this.clear(slot);
 		if(pos > 70){^"Highest displayable MIDI note is 121".error};
@@ -196,7 +196,7 @@ MITHNoteViewer {
 
 	add {|note, slot = 0, showNat = false, color|
 		var infoArr, model, vPos;
-		slot = slot.min(noteSlots-1);
+		slot = slot.min(staveSlots-1);
 		model = models[slot];
 		this.clear(slot);
 		if(note.abs > 121){^"Highest displayable MIDI note is 121".error};
@@ -211,7 +211,7 @@ MITHNoteViewer {
 
 	addAll {|noteArr, showNat = false, color|
 		noteArr.do{|i, j|
-			if(j<noteSlots){
+			if(j<staveSlots){
 				this.add(i, j, showNat, color)
 			};
 		}
@@ -227,7 +227,7 @@ MITHNoteViewer {
 	}
 
 	clearAll {
-		noteSlots.do{|i| this.clear(i) };
+		staveSlots.do{|i| this.clear(i) };
 		^this
 	}
 
