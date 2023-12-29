@@ -516,10 +516,10 @@ MITHNoteViewerModel {
 
 
 MITHNoteViewerGui {
-	var model, win, <uView, <spec, <staveLinesArr;
-	var <ledgerLinesArr, clefBoxes, <>noteTxtBox;
-	var <staticTextsDict, foreground, <>accTxtBox;
-	var accOffset;
+	var model, win, <uView, <spec;
+	var <ledgerLinesArr, clefBoxes;
+	var <staticTextsDict, foreground;
+	var accOffset, <staveLinesArr;
 
 	*new { |model, win|
 		^super.new.init(model, win);
@@ -566,7 +566,8 @@ MITHNoteViewerGui {
 	}
 
 	makeGlyphs {|glyphsDict|
-		var vPos, midi, accTxtBoxBounds, accidental, accEmpty;
+		var vPos, midi, accTxtBoxBounds, accidental;
+		var accEmpty, noteTxtBox, accTxtBox;
 
 		vPos = glyphsDict[\vPos];
 		midi= glyphsDict[\midi];
@@ -633,8 +634,10 @@ MITHNoteViewerGui {
 		}
 		{what == \glyphsCol} {
 			if(staticTextsDict.notEmpty){
-				noteTxtBox.stringColor = val;
-				accTxtBox.stringColor = val
+				staticTextsDict.do{ |i|
+					i[0].stringColor = val;
+					i[1].stringColor = val
+				}
 			}
 		}
 		{what == \foreground} {
@@ -642,18 +645,15 @@ MITHNoteViewerGui {
 			uView.refresh;
 			clefBoxes.do{|i| i.stringColor = foreground};
 			if(staticTextsDict.notEmpty){
-				noteTxtBox.stringColor = foreground;
-				accTxtBox.stringColor = foreground
+				staticTextsDict.do{ |i|
+					i[0].stringColor = foreground;
+					i[1].stringColor = foreground
+				}
 			}
 		}
 		^this
 	}
 }
-
-
-
-
-
 
 
 
