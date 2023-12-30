@@ -20,9 +20,9 @@ www.ludions.com
 
 MITHNoteViewer {
 	var <fontSize, <fontName, <models, <views, <fontBool;
-	var <>mappingClassName, <mapper, <signed, <accidentalsMap, clefWidth;
+	var <>mappingClassName, <mapper, <signed, <accidentalsMap;
 	var <winHeight, <winWidth, <staveSlots, <foreground;
-	var <winModel, <winBackground, <background;
+	var <winModel, <winBackground, <background, clefWidth;
 
 	*new {|staveSlots, winHeight, signed = true, fontName, winPos, mappingClassName|
 		^super.new.init(staveSlots, winHeight, signed, fontName, winPos, mappingClassName);
@@ -166,7 +166,6 @@ MITHNoteViewer {
 		^models[slot].glyphsCol
 	}
 
-
 	glyphsCol_ {|color, slot=0|
 		// check slot is not empty
 		if(models[slot].glyphsCol.notNil){
@@ -198,7 +197,7 @@ MITHNoteViewer {
 		var infoArr, model, vPos;
 		slot = slot.min(staveSlots-1);
 		model = models[slot];
-		this.clear(slot);
+		this.clear(slot, false);
 		if(note.abs > 121){^"Highest displayable MIDI note is 121".error};
 		infoArr = mapper.map(note, showNat); // [vPos, glyphsArr, midi, showNat]
 		// glyphsArr is [note, acc]
@@ -217,30 +216,23 @@ MITHNoteViewer {
 		}
 	}
 
-	remove {|note, slot=0|
-		var pos, model;
-		model = models[slot];
-		pos = mapper.mapMIDI(note)[0];
-		model.removeGlyphs(pos);
-		model.selectLedgerLines([]); // remove all lines
-		^this;
-	}
-
 	clearAll {
-		staveSlots.do{|i| this.clear(i) };
+		staveSlots.do{|i| this.clear(i, false) };
 		^this
 	}
 
-
-	clear {|slot=0|
+	clear {|slot=0, verbose = true|
 		var model, currentGlyphs;
 		model = models[slot];
-		currentGlyphs = model.currentGlyphsArr.copy;
-		currentGlyphs.do{|i|
-			model.removeGlyphs(i);
+		currentGlyphs = model.currGlyphsInfo;
+		if(currentGlyphs.notEmpty){
+			model.removeGlyphs;
+			model.selectLedgerLines([])
+		}{
+			if(verbose){
+			"No notes in this slot".postln;
+			}
 		};
-		model.currGlyphsInfo.clear;
-		model.selectLedgerLines([]);
 		^this
 	}
 
@@ -282,8 +274,8 @@ MITHNoteViewerModel {
 	var <uViewBounds, <staveSpace, <staveLinesArr, viewHeight, <penWidth;
 	var <ledgerLinesArr, <mCVOffset, <clefInfo, <clefVOffsets, <clefsWidth;
 	var <clefGlyphs, <noteBoxesL, <noteVOffsetsArr, <clefsBool, numNoteVPos;
-	var <penWidthLedger, <currentGlyphsArr, <foreground;
-	var <currGlyphsInfo, <ledgerLinesArrNarrowPx, <ledgerLinesArrWidePx;
+	var <penWidthLedger, <foreground, <currGlyphsInfo;
+	var <ledgerLinesArrNarrowPx, <ledgerLinesArrWidePx;
 
 
 	*new { |fontSize, fontName, clefsBool, hOffset, viewWidth, fontBool|
@@ -318,7 +310,6 @@ MITHNoteViewerModel {
 		penWidthLedger = penWidth * 1.5;
 		numNoteVPos = 71;
 		this.calcNotesPos;
-		currentGlyphsArr = [];
 		currGlyphsInfo = Dictionary.new;
 		^this
 	}
@@ -343,7 +334,6 @@ MITHNoteViewerModel {
 		^this;
 	}
 
-
 	displayNote {|vPos=0, stringArr, midi, showNat, color|
 		this.displayGlyphs(vPos, stringArr, midi, showNat, color);
 		this.displayLedgerLines(vPos);
@@ -351,24 +341,18 @@ MITHNoteViewerModel {
 	}
 
 	displayGlyphs { |vPos, stringArr, midi, showNat, color|
-
-		if(currentGlyphsArr.includes(vPos).not) {
-			currentGlyphsArr = currentGlyphsArr.add(vPos);
-			currGlyphsInfo.clear; // remove old
-			if(color.isNil){color = foreground};
-			currGlyphsInfo.put(\vPos, vPos);
-			currGlyphsInfo.put(\midi, midi);
-			currGlyphsInfo.put(\stringArr, stringArr);
-			currGlyphsInfo.put(\bounds, noteBoxesL[vPos]);
-			currGlyphsInfo.put(\font, font);
-			currGlyphsInfo.put(\showNat, showNat);
-			currGlyphsInfo.put(\color, color);
-
-			this.changed(\glyphsInfo, currGlyphsInfo);
-		};
+		currGlyphsInfo.clear; // remove old
+		if(color.isNil){color = foreground};
+		currGlyphsInfo.put(\vPos, vPos);
+		currGlyphsInfo.put(\midi, midi);
+		currGlyphsInfo.put(\stringArr, stringArr);
+		currGlyphsInfo.put(\bounds, noteBoxesL[vPos]);
+		currGlyphsInfo.put(\font, font);
+		currGlyphsInfo.put(\showNat, showNat);
+		currGlyphsInfo.put(\color, color);
+		this.changed(\glyphsInfo, currGlyphsInfo);
 		^this;
 	}
-
 
 	glyphsCol {
 		^currGlyphsInfo[\color]
@@ -376,12 +360,9 @@ MITHNoteViewerModel {
 
 	glyphsCol_ {|color|
 		currGlyphsInfo.put(\color, color); // updates here
-		// TODO consider new update method
-		// changes GUI without rewriting entire note
 		this.changed(\glyphsCol, color);
 		^this
 	}
-
 
 	displayLedgerLines {|vPos|
 		var currLedgerLns;
@@ -419,12 +400,9 @@ MITHNoteViewerModel {
 		^this;
 	}
 
-
-	removeGlyphs {|offset|
-		if(currentGlyphsArr.includes(offset)) {
-			currentGlyphsArr.remove(offset);
-			this.changed(\currentGlyphsArr, offset);
-		};
+	removeGlyphs {
+		currGlyphsInfo.clear;
+		this.changed(\clearGlyphs);
 		^this
 	}
 
@@ -485,7 +463,6 @@ MITHNoteViewerModel {
 		^this;
 	}
 
-
 	singleStaveLines {|lnHeight, vOffset=0, viewWidth, clefsWidth|
 		var staffLines;
 		viewWidth = (viewWidth * fontSize) + clefsWidth + 0.3; // add to avoid gaps
@@ -495,7 +472,6 @@ MITHNoteViewerModel {
 		};
 		^staffLines
 	}
-
 
 	calcStaveLines {|viewWidth, clefsWidth|
 		var staveVOffsets, vOffset;
@@ -593,9 +569,10 @@ MITHNoteViewerGui {
 		^this;
 	}
 
-	clearGlyphs {|offset|
-		staticTextsDict.at(offset).do{|i|
-			i.remove
+	clearGlyphs {
+		staticTextsDict.do{|i|
+			i.[0].remove;
+			i.[1].remove
 		};
 		^this;
 	}
@@ -629,8 +606,8 @@ MITHNoteViewerGui {
 		{what == \glyphsInfo} {
 			this.makeGlyphs(val);
 		}
-		{what == \currentGlyphsArr} {
-			this.clearGlyphs(val);
+		{what == \clearGlyphs} {
+			this.clearGlyphs;
 		}
 		{what == \glyphsCol} {
 			if(staticTextsDict.notEmpty){
