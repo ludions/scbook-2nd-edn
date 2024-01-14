@@ -14,7 +14,7 @@ www.ludions.com
 
 MITHNoteMidiMap {
 
-	var midiRaw, signed, octave, pc, midiAbs, noteClass;
+	var midiRaw, signed, octave, pc, midiAbs, noteClassInt;
 	var accidntlBool, alteration, accidental, glyphs;
 	var <accidentalsMap, glyphsDict, vPos, glyphsArr;
 
@@ -41,12 +41,17 @@ MITHNoteMidiMap {
 	// returns array of indivudal glyphs [notehead, accidental]
 	// accidental may be empty string;
 	map {|midi, showNatural = false|
-		var note, acc;
+		var note, acc, noteClassName;
 		this.mapMIDI(midi);
 		note = glyphsDict[\noteheadBlack]; // black notehead
 		acc = this.mapAccidentalsToGlyphs(accidental, showNatural);
+		noteClassName = this.noteClassSym(noteClassInt);
 		glyphsArr = [note, acc]
-		^[vPos, glyphsArr, midi, showNatural]
+		^[vPos, glyphsArr, midi, showNatural, noteClassName]
+	}
+
+	noteClassSym {|int|
+		^ [\C, \D, \E, \F, \G, \A, \B][int.mod(7)];
 	}
 
 	mapAccidentalsToGlyphs {|accidental, showNatural|
@@ -60,14 +65,13 @@ MITHNoteMidiMap {
 		^acc
 	}
 
-
-
 	accidentalsMap_ {|dict|
 		accidentalsMap = dict ?? (1: 1, 3: -1, 6: 1, 8: 1, 10: -1);
 		^this
 	}
 
 	pcToNoteClass {|pc|
+		pc = pc.asInteger; // in case float
 		^[0, 2, 4, 5, 7, 9, 11].indexOf(pc)
 	}
 
@@ -119,12 +123,12 @@ MITHNoteMidiMap {
 
 		// edge cases needed for signed Fb and Cb
 		if(signed){this.checkForCorFFlats};
-		noteClass = (pc + alteration.neg)%12;
-		// noteClass essentially C-natural scale degree -1 (0 -> 6)
+		noteClassInt = (pc + alteration.neg)%12;
+		// noteClassInt essentially C-natural scale degree -1 (0 -> 6)
 		// or a vPos class (minus octave)
-		noteClass = this.pcToNoteClass(noteClass);
-		vPos = noteClass + (octave * 7);
-		^[vPos, pc, noteClass, accidental, octave];
+		noteClassInt = this.pcToNoteClass(noteClassInt);
+		vPos = noteClassInt + (octave * 7);
+		^[vPos, pc, noteClassInt, accidental, octave];
 	}
 
 
