@@ -38,7 +38,7 @@ MITHNoteMidiMap {
 
 	}
 
-	// returns array of indivudal glyphs [notehead, accidental]
+	// returns array of individual glyphs [notehead, accidental]
 	// accidental may be empty string;
 	map {|midi, showNatural = false|
 		var note, acc, noteClassName;
@@ -135,10 +135,10 @@ MITHNoteMidiMap {
 	// https://www.w3.org/2021/03/smufl14/tables/standard-accidentals-12-edo.html
 	glyphs {
 		var accidentalSharp, accidentalFlat;
-		var accidentalNatural, noteheadBlack;
+		var accidentalNatural, noteheadBlack, noteheadWholeFilled;
 		var accidentalDoubleSharp, accidentalDoubleFlat;
 		var accidentalNaturalFlat, accidentalNaturalSharp;
-		var noteheadWhole, noteheadHalf; // semi-breve, minim
+		var noteheadWhole, noteheadHalf, noteheadDoubleWholeSquare;
 
 		accidentalSharp = "U+E262";
 		accidentalFlat = "U+E260";
@@ -150,6 +150,9 @@ MITHNoteMidiMap {
 		noteheadBlack = "U+E0A4";
 		noteheadWhole = "U+E0A2";
 		noteheadHalf = "U+E0A3";
+		noteheadDoubleWholeSquare = "U+E0A1";
+		noteheadWholeFilled = "U+E0FA";
+
 
 		glyphsDict = Dictionary.new;
 		glyphsDict.putPairs([
@@ -162,7 +165,9 @@ MITHNoteMidiMap {
 			\accidentalNaturalSharp, accidentalNaturalSharp.asGlyph.asString,
 			\noteheadBlack, noteheadBlack.asGlyph.asString,
 			\noteheadWhole, noteheadWhole.asGlyph.asString,
-			\noteheadHalf, noteheadHalf.asGlyph.asString
+			\noteheadHalf, noteheadHalf.asGlyph.asString,
+			\noteheadDoubleWholeSquare, noteheadDoubleWholeSquare.asGlyph.asString,
+			\noteheadWholeFilled, noteheadWholeFilled.asGlyph.asString
 		]);
 		^this;
 	}
