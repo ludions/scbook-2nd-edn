@@ -33,7 +33,7 @@ MITHNoteMidiMap {
 		midiAbs = midi.abs;
 		octave = (midiAbs/12).floor.asInteger;
 		pc = midiAbs%12;
-		accidntlBool = accidentalsMap.keys.asArray.includes(pc);
+		accidntlBool = accidentalsMap.keys.asArray.includes(pc.asInteger);
 		^this.processMidi;
 
 	}
