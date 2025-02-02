@@ -261,6 +261,11 @@ MITHNoteViewer {
 		^this
 	}
 
+	front {
+		winModel.front;
+		this;
+	}
+
 	close {
 		winModel.close;
 		this;
