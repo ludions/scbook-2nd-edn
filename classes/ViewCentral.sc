@@ -86,6 +86,10 @@ ViewCentralModel {
 		this.changed(\fullScreen);
 	}
 
+	front {
+		this.changed(\front)
+	}
+
 	close {
 		this.changed(\close);
 		^this
@@ -318,6 +322,9 @@ ViewCentral {
 		}
 		{what == \fullScreen} {
 			win.fullScreen
+		}
+		{what == \front} {
+			win.front
 		}
 		{what == \endFullScreen} {
 			win.endFullScreen
