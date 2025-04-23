@@ -1,0 +1,47 @@
+{
+	"noteheadBlack": {
+		"codepoint": "U+E0A4",
+		"description": "Black notehead"
+	 },
+
+	"noteheadWhole": {
+		"codepoint": "U+E0A2",
+		"description": "Whole (semibreve) notehead"
+	 },
+
+	"noteheadDoubleWholeSquare": {
+		"codepoint": "U+E0A1",
+		"description": "Double whole (breve) notehead (square)"
+	 },
+
+	"gClef": {
+		"codepoint": "U+E050",
+		"description": "G clef"
+	 },
+
+	"fClef": {
+		"codepoint": "U+E062",
+		"description": "F clef"
+	 },
+
+	"cClef": {
+		"codepoint": "U+E05C",
+		"description": "C clef"
+	 },
+
+	"accidentalNatural": {
+		"codepoint": "U+E261",
+		"description": "Natural"
+	},
+
+	"accidentalFlat": {
+		"codepoint": "U+E260",
+		"description": "Flat"
+	},
+
+	"accidentalSharp": {
+		"codepoint": "U+E262",
+		"description": "Sharp"
+	}
+
+}
