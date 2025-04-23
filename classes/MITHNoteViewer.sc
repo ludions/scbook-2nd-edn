@@ -12,7 +12,7 @@ Dependencies:
 // check if default font Bravura is installed
 Font.availableFonts.collect({|i| (i == "Bravura")}).includes(true)
 
-© 2023 Tom Hall
+© 2023–2025 Tom Hall
 www.ludions.com
 
 */
@@ -168,7 +168,7 @@ MITHNoteViewer {
 
 	glyphsCol_ {|color, slot=0|
 		// check slot is not empty
-		if(models[slot].glyphsCol.notNil){
+		if(models[slot].notNil){
 			models[slot].glyphsCol_(color);
 		}{
 			format("No note at slot % to color", slot).error;
@@ -185,10 +185,11 @@ MITHNoteViewer {
 		var infoArr, model;
 		slot = slot.min(staveSlots-1);
 		model = models[slot];
-		this.clear(slot);
+		this.clear(slot, false);
 		if(pos > 70){^"Highest displayable MIDI note is 121".error};
 		if(color.isNil){color = foreground};
-		infoArr = [pos, stringArr, 121- pos, \true, color];
+		// noteClassName is nil below, as returned by the mapper, not in use here
+		infoArr = [pos, stringArr, 121- pos, \true, nil, color];
 		model.displayNote(*infoArr);
 		^this
 	}
@@ -199,7 +200,8 @@ MITHNoteViewer {
 		model = models[slot];
 		this.clear(slot, false);
 		if(note.abs > 121){^"Highest displayable MIDI note is 121".error};
-		infoArr = mapper.map(note, showNat); // [vPos, glyphsArr, midi, showNat]
+		// infoArr is [vPos, glyphsArr, midi, showNat, noteClassName]
+		infoArr = mapper.map(note, showNat);
 		// glyphsArr is [note, acc]
 		vPos = infoArr[0];
 		if(color.isNil){color = foreground};
@@ -339,13 +341,13 @@ MITHNoteViewerModel {
 		^this;
 	}
 
-	displayNote {|vPos=0, stringArr, midi, showNat, color|
-		this.displayGlyphs(vPos, stringArr, midi, showNat, color);
+	displayNote {|vPos=0, stringArr, midi, showNat, noteClassName, color|
+		this.displayGlyphs(vPos, stringArr, midi, showNat, noteClassName, color);
 		this.displayLedgerLines(vPos);
 		^this
 	}
 
-	displayGlyphs { |vPos, stringArr, midi, showNat, color|
+	displayGlyphs { |vPos, stringArr, midi, showNat, noteClassName, color|
 		currGlyphsInfo.clear; // remove old
 		if(color.isNil){color = foreground};
 		currGlyphsInfo.put(\vPos, vPos);
@@ -354,6 +356,7 @@ MITHNoteViewerModel {
 		currGlyphsInfo.put(\bounds, noteBoxesL[vPos]);
 		currGlyphsInfo.put(\font, font);
 		currGlyphsInfo.put(\showNat, showNat);
+		currGlyphsInfo.put(\noteClassName, noteClassName);
 		currGlyphsInfo.put(\color, color);
 		this.changed(\glyphsInfo, currGlyphsInfo);
 		^this;
@@ -499,7 +502,7 @@ MITHNoteViewerModel {
 MITHNoteViewerGui {
 	var model, win, <uView, <spec;
 	var <ledgerLinesArr, clefBoxes;
-	var <staticTextsDict, foreground;
+	var <staticTexts, foreground;
 	var accOffset, <staveLinesArr;
 
 	*new { |model, win|
@@ -524,7 +527,6 @@ MITHNoteViewerGui {
 		if(model.clefsBool and:{model.fontBool}) {
 			this.makeClefs;
 		};
-		staticTextsDict = Dictionary.new;
 
 		// in case gui rebuild and already glyphs
 		// previoulsy displayed
@@ -570,15 +572,15 @@ MITHNoteViewerGui {
 			accTxtBox.stringColor = glyphsDict[\color];
 		});
 
-		staticTextsDict.put(vPos, [noteTxtBox, accTxtBox]);
+		staticTexts = vPos ->  [noteTxtBox, accTxtBox];
 		^this;
 	}
 
 	clearGlyphs {
-		staticTextsDict.do{|i|
-			i.[0].remove;
-			i.[1].remove
+		staticTexts.value.do{|i|
+			i.remove;
 		};
+		staticTexts = nil;
 		^this;
 	}
 
@@ -599,7 +601,15 @@ MITHNoteViewerGui {
 				Pen.stroke;
 				Pen.width_(model.penWidth);
 			};
-		};
+		}
+	}
+
+	updateGlyphsColor {|color|
+		staticTexts.value.do{ |i|
+			if(i.notNil){
+				i.stringColor = color
+			}
+		}
 	}
 
 	update {|obj, what, val|
@@ -615,22 +625,16 @@ MITHNoteViewerGui {
 			this.clearGlyphs;
 		}
 		{what == \glyphsCol} {
-			if(staticTextsDict.notEmpty){
-				staticTextsDict.do{ |i|
-					i[0].stringColor = val;
-					i[1].stringColor = val
-				}
+			if(staticTexts.notNil){
+				this.updateGlyphsColor(val)
 			}
 		}
 		{what == \foreground} {
 			foreground = val;
 			uView.refresh;
 			clefBoxes.do{|i| i.stringColor = foreground};
-			if(staticTextsDict.notEmpty){
-				staticTextsDict.do{ |i|
-					i[0].stringColor = foreground;
-					i[1].stringColor = foreground
-				}
+			if(staticTexts.notNil){
+				this.updateGlyphsColor(val)
 			}
 		}
 		^this
