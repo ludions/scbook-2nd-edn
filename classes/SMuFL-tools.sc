@@ -1,58 +1,34 @@
-// © 2022 Tom Hall
-// ludions.com
-
-
 /*
+SMuFLtools
 
-// See the 'metadata' directory in the download available at:
+Dependencies:
+- MITHUnicode
+- a SMuFL font, e.g. Bravura (default) https://github.com/steinbergmedia/bravura/
 
-"https://github.com/w3c/smufl".openOS
+// check if default font Bravura is installed
+Font.availableFonts.collect({|i| (i == "Bravura")}).includes(true)
 
-// use demo JSON data for now
-h = SMuFLtoolsModel.new(p)
-
-h.pathFinder
-
-g = SMuFLtoolsGUI.new(h)
-
-h.search("clef")
-
-h.glyphIndex_(0)
-
-h.searchKeys
-
-h.glyphName_(\accidentalNatural)
-
-h.glyphName
-
-h.glyphCodepoint;
-
-h.glyphDesc
-
-h.singleGlyphDict
-
-
+© 2022–2025 Tom Hall
+ludions.com
 */
 
 
-SMuFLtoolsModel {
+SMuFLtools {
 	var <filePath, <jsonData, <curGlyph;
 	var <dictGlyphClasses, <singleGlyphDict;
 	var <searchKeys, allKeys, <glyphName, <searchStr;
 	var <glyphCodepoint, <glyphDesc, <>verbose;
 
-	*new {|filePathBase, verbose=false|
-		^super.new.init(filePathBase, verbose);
+	*new {|filePath, verbose=false|
+		^super.new.init(filePath, verbose);
 	}
 	init {|afilePath, aVerbose|
 		var filePathNil;
 		filePath = afilePath;
 		verbose = aVerbose;
-		searchKeys = Set.new;
 		if(filePathNil = filePath.isNil, {
-			filePath = thisProcess.nowExecutingPath.dirname++"/SMuFL-tools-demo-data.json";
-			"Demo json data will be loaded as filePath is nil".postln;
-			"Override using pathFinder method to select JSON file path, e.g. to 'glyphnames.json'".postln;
+			filePath = this.class.filenameSymbol.asString.dirname.dirname ++ "/data/SMuFL-tools-demo-data.json";
+			"Demo json data will be loaded as filePath arg is empty".postln;
 		});
 
 		if(File.exists(filePath) and: {this.checkJSON(filePath)}) {
@@ -60,15 +36,19 @@ SMuFLtoolsModel {
 		} {
 			this.pathErrorMsg;
 			if(filePathNil) {
-				"File 'SMuFL-tools-demo-data.json' is not in expected place alongside class file".inform;
+				"File 'SMuFL-tools-demo-data.json' is not in expected place".inform;
 			}{
 				"Try using pathFinder method to select JSON file path to 'SMuFL-tools-demo-data.json'".inform;
 			};
 		};
+		this.reset;
 		^this
 	}
 
-
+	gui {|scale|
+		SMuFLtoolsGUI.new(this, scale);
+		^this
+	}
 
 	pathFinder {
 		FileDialog({ |aPath|
@@ -118,22 +98,29 @@ SMuFLtoolsModel {
 		this.changed(\searchStr, searchStr);
 		searchKeys = allKeys.as(Array).sort;
 		this.changed(\searchKeys, searchKeys);
+		^this
+	}
+
+	clear {
+		^this.reset;
 	}
 
 	search {|str|
+		var print = false;
 		searchStr = str;
 		this.changed(\searchStr, searchStr);
 		searchKeys = allKeys.select({ arg item, i; item.containsi(str) });
 		if(searchKeys.isEmpty, {
 			"No glyph found resulting from that search".warn;
-			this.reset; // TEST
+			this.reset;
 		}, {
 			format("% glyph(s) found.", searchKeys.size).postln;
 			searchKeys = searchKeys.as(Array).sort;
 			this.changed(\searchKeys, searchKeys);
 			if(searchKeys.size==1){
-				this.glyphName_(searchKeys[0]); // and?
+				print = true
 			};
+			this.glyphName_(searchKeys[0], print: print);
 			if(verbose, {this.printSearchResults});
 		});
 		^this
@@ -145,8 +132,10 @@ SMuFLtoolsModel {
 
 	glyphIndex_ { |index=0|
 		if(searchKeys.notEmpty, {
+			index = index.min(searchKeys.size-1);
 			glyphName = searchKeys[index];
 			this.changed(\glyphName, glyphName);
+			this.changed(\listViewHighlight, index);
 			this.glyphInfo;
 		}, {
 			"No glyph at that index.".error;
@@ -154,7 +143,16 @@ SMuFLtoolsModel {
 		^this
 	}
 
-	glyphName_ { |nameStr|
+	selectGlyph {|name|
+		name = name.asString;
+		if(glyphName != name){
+			this.glyphName_(name, true);
+		}
+		^this
+	}
+
+	glyphName_ { |nameStr, reset = false, print = true|
+		if(reset){this.reset}; // clear existing search
 		nameStr = nameStr.asString;
 		singleGlyphDict = dictGlyphClasses.atFail(nameStr, {
 			format("glyphName '%' does not exist. Try using search.", nameStr).error;
@@ -165,7 +163,9 @@ SMuFLtoolsModel {
 			glyphName = nameStr;
 			this.changed(\glyphName, glyphName);
 			this.glyphInfo;
-			this.postGlyphInfo
+			if(print){
+				this.postGlyphInfo
+			};
 		});
 		^this
 	}
@@ -204,7 +204,6 @@ SMuFLtoolsGUI {
 	var model, <win, <>bkgCol, <scale;
 	var <>searchField, <>listView, col1Width = 220;
 	var <>nameStatic, <>codeStatic, <>descrStatic, <>bigGlyph;
-	// var <>nameFieldl
 
 	*new { |model, scale|
 		^super.new.init(model, scale);
@@ -226,37 +225,20 @@ SMuFLtoolsGUI {
 		win = Window.new("SMuFL Font GUI", Rect(128, 64, 440 * scale, 400 * scale)).layout_(
 			HLayout(
 				VLayout(
-					/*
-					[HLayout(
-						StaticText(win, 110@80).string_("Glyph name"),
-						[nameField = TextField()
-							.action_{ arg view;
-								if(view.value.notEmpty, {
-									searchField.string_(""); //test
-									model.glyphName_(view.value);
-									//model.postGlyphInfo;
-									view.string = view.value;
-							})}
-							.maxWidth_(110),
-							align: \left]
-					)],
-					*/
 					[HLayout(
 						StaticText(win, 110@80 * scale).string_("Search"),
 						[searchField = TextField()
 							.action_{ arg view;
 								model.search(view.value);
 								view.string = view.value;
-								//nameField.string_("")
 							}
-							.maxWidth_(110*scale),
+							.maxWidth_(110 * scale),
 							align: \left]
 					)],
-					[listView = ListView(win,220@200 * scale)
+					[listView = ListView(win, 220@200 * scale)
 						.maxWidth_(col1Width)
 						.background_(Color.white)
 						.hiliteColor_(Color.yellow(alpha:0.6))
-						//.valueAction_({ arg sbs;
 						.action_({ arg sbs;
 							model.glyphName = listView.items[sbs.value];
 						})
@@ -275,27 +257,36 @@ SMuFLtoolsGUI {
 					[codeStatic = StaticText()
 						.string_("Code point:")
 						.background_(bkgCol)
-						.minSize_(220@40 *scale)
+						.minSize_(220@40 * scale)
 						, align: \topLeft],
 					[descrStatic = StaticText()
 						.string_("Description: ")
 						.background_(bkgCol)
-						.minSize_(220@80*scale),
+						.minSize_(220@80 * scale),
 						align: \topLeft],
 					[bigGlyph = StaticText().string_("")
-						.font_(Font("Bravura", 84*scale))
+						.font_(Font("Bravura", 84 * scale))
 						.background_(bkgCol)
-						.minSize_(220@240*scale)
+						.minSize_(220@240 * scale)
 						, align: \topLeft]
 				), align: \top]
 			)
 		).front;
 	}
 
+	updateGlyphName {|name|
+		var listViewIndex;
+		nameStatic.string = format("Name:\n%", name);
+		// highlight name in list
+		//listView.items.postln;
+		listViewIndex= listView.items.indexOfEqual(name);
+		listView.value_(listViewIndex);
+	}
+
 	update {|obj, what, val|
 		case
 		{what == \glyphName} {
-			nameStatic.string = format("Name:\n%", model.glyphName);
+			this.updateGlyphName(model.glyphName)
 		}
 		{what == \glyphCodepoint} {
 			codeStatic.string = format("Code point: %", model.glyphCodepoint);
@@ -310,6 +301,9 @@ SMuFLtoolsGUI {
 		}
 		{what == \searchKeys} {
 			listView.items_(model.searchKeys);
+		}
+		{what == \listViewHighlight} {
+			listView.value_(val)
 		};
 
 		^this
