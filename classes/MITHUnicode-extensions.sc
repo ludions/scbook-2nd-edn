@@ -99,6 +99,11 @@ ludions.com
 
 + String {
 
+	// display nested text code points as glyphs
+	asNestedGlyphs {
+		^this.parseCodePoints.asGlyph;
+	}
+
 	// used to find Unicode names nested in strings - not for glyphs
 	parseCodePoints {
 		var regExpr, pos, codePointRanges;
