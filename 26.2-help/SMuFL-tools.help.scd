@@ -22,8 +22,9 @@ SMuFLtools is a convenience class for searching SMuFL fonts. See:
 Font.availableFonts.collect({|i| (i == "Bravura")}).includes(true)
 
 // A small demo subset of SMuFL font metadata in JSON form is provided with the class.
-// Download of the complete SMuFL font metadata, under 'Releases', is avaialable here:
+// These can be used to test class functionality
 
+// Otherwise, download of the complete SMuFL font metadata, under 'Releases', is avaialable here:
 "https://github.com/w3c/smufl".openOS
 
 // The class instance has a 'filePath' argument
