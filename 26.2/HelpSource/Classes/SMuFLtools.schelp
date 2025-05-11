@@ -1,0 +1,218 @@
+TITLE:: SMuFLtools
+summary:: a convenience class for searching SMuFL fonts
+categories:: Notation
+related:: Classes/MITHNoteViewer, Classes/MITHUnicode
+
+DESCRIPTION::
+Part of a project for displaying Common Western Music Notation in SuperCollider using SMuFL ('Standard Music Font Layout') fonts, https://w3c.github.io/smufl/latest/. The class enables searching for a SMuFL glyph by name, and returns its description and Unicode codepoint. If the GUI is created, the glyph will also be displayed.
+
+note:: This class has the dependencies link::Classes/MITHUnicode::  and a SMuFL font, e.g. Bravura (default) https://github.com/steinbergmedia/bravura/, which includes metadata JSON files, see filePath argument below.
+::
+
+
+CLASSMETHODS::
+
+METHOD:: new
+Creates a SMuFLtools instance.
+
+ARGUMENT:: filePath
+Path to the SMuFL JSON data. If Nil, demo data is used if present at ../data/SMuFL-tools-demo-data.json
+
+ARGUMENT:: verbose
+a Boolean, posts further information to the Post Window for some class instance methods.
+
+code::
+f = SMuFLtools.new
+::
+
+
+INSTANCEMETHODS::
+
+	private:: setGlyphName
+
+	private:: reset
+
+	private:: glyphInfo
+
+	private:: pathErrorMsg
+
+	private:: createDictionary
+
+	private:: checkJSON
+
+	private:: searchStr
+
+
+METHOD:: filePath
+
+returns:: the path of the loaded JSON data file
+
+
+METHOD:: verbose
+get or set verbose mode after class has been instantiated
+
+
+METHOD:: dictGlyphClasses
+
+returns:: A Dictionary of all glyphs from the JSON file
+
+
+subsection:: GUI
+
+METHOD:: pathFinder
+conveniance method, opens a GUI picker to select a JSON data file
+
+METHOD:: gui
+Makes a instance of link::Classes/SMuFLtoolsGUI:: to navigate SMuFL glyphs via a GUI Window.
+N.B. It is not necessary to use this class directly other than via this method.
+
+code::
+f.gui
+::
+
+
+subsection:: Selecting a glyph
+
+METHOD:: selectGlyph
+Selects a glyph and calls postGlyphInfo
+
+ARGUMENT:: name
+the name of the selected glyph, as either a String or Symbol
+
+code::
+f.selectGlyph(\gClef)
+::
+
+METHOD:: postGlyphInfo
+Posts the name and Unicode codepoint of a selected glyph as an Association.
+
+code::
+f.postGlyphInfo // ("gClef" -> "U+E050")
+::
+
+
+METHOD:: glyphName
+
+returns:: the name of a selected glyph
+
+METHOD:: glyphCodepoint
+
+returns:: a String of the codepoint of a selected glyph
+
+
+METHOD:: glyphDesc
+
+returns:: the SMuFL description of a selected glyph
+
+METHOD:: postGlyphDict
+
+returns:: Posts the Dictionary of the selected glyph data
+
+
+subsection:: Searching
+
+METHOD:: search
+search for a glyph
+
+ARGUMENT:: str
+A String to be searched for within the glyph names Dictionary
+
+returns:: prints how many matches (if any) are found
+
+METHOD:: printSearchResults
+pretty print search results
+
+returns:: prints a list of matches, with index for selecting glyph
+
+METHOD:: searchKeys
+
+returns:: an Array of glyph name matches from a search
+
+
+METHOD:: glyphIndex
+sets the current glyph
+
+ARGUMENT:: index
+An Integer to select a glyph from a list of returned search results
+
+METHOD:: clear
+clears the current search
+
+
+EXAMPLES::
+
+code::
+
+// Check if default font Bravura is installed
+Font.availableFonts.collect({|i| (i == "Bravura")}).includes(true)
+
+// A small demo subset of SMuFL font metadata in JSON form is provided with the class.
+// This can be used to test class functionality
+
+// Otherwise, download of the complete SMuFL font metadata, under 'Releases', is avaialable here:
+"https://github.com/w3c/smufl".openOS
+
+// If filePath argument is nil, demo JSON data is loaded
+f = SMuFLtools.new
+
+// or, eg.: f = SMuFLtools.new("/path/to/my/JSON/file/glyphnames.json")
+
+// or select a different JSON data file
+f.pathFinder // GUI picker
+
+// GUI may be useful, is optional
+f.gui
+
+// select a glyph directly by its full name
+f.selectGlyph(\noteheadWhole)
+f.selectGlyph(\gClef)
+
+// repost glyph info
+f.postGlyphInfo
+
+// search for a glyph
+f.search("clef")
+
+f.clear // clears search
+
+// partial glyph search terms OK
+f.search("note")
+
+f.search("acc")
+
+// show all results in Post Window
+// by default all keys if no search performed
+f.printSearchResults // pretty print, gives index of result also
+
+f.searchKeys // Array
+
+// navigate to the second search result via code
+f.glyphIndex_(1) // to update glyph properties
+
+// selected glyph properties
+f.glyphName
+f.glyphCodepoint
+f.glyphDesc
+
+// Dictionary of data for selected glyph
+f.postGlyphDict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+::

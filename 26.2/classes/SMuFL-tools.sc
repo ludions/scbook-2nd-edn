@@ -15,7 +15,7 @@ ludions.com
 
 SMuFLtools {
 	var <filePath, <dictGlyphClasses, singleGlyphDict;
-	var <searchKeys, allKeys, <glyphName, searchStr;
+	var <searchKeys, allKeys, <glyphName, <searchStr;
 	var <glyphCodepoint, <glyphDesc, <>verbose;
 
 	*new {|filePath, verbose=false|
@@ -110,7 +110,9 @@ SMuFLtools {
 		this.changed(\searchStr, searchStr);
 		searchKeys = allKeys.select({ arg item, i; item.containsi(str) });
 		if(searchKeys.isEmpty, {
-			"No glyph found resulting from that search".warn;
+			if(searchStr.notEmpty){
+				"No glyph found resulting from that search".warn;
+			};
 			this.reset;
 		}, {
 			format("% glyph(s) found.", searchKeys.size).postln;
@@ -243,10 +245,10 @@ SMuFLtoolsGUI {
 						.background_(Color.white)
 						.hiliteColor_(Color.yellow(alpha:0.6))
 						.action_({ arg sbs;
-							model.glyphName = listView.items[sbs.value];
+							model.setGlyphName(listView.items[sbs.value]);
 						})
 						.enterKeyAction_({ arg sbs;
-							model.glyphName = listView.items[sbs.value];
+							model.setGlyphName(listView.items[sbs.value]);
 							model.postGlyphDict
 						})
 					]
