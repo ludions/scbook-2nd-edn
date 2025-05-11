@@ -7,7 +7,7 @@ Tom Hall, Newton Armstrong, and Richard Hoadley
 
 These code classes and listings are for chapter section: ‘26.2 CPWN and graphic notation within SuperCollider’.
 
-Files in dir ‘26.2-help’ are not native SC IDE help files, but rather scd files intended as general help for the relavant classes.
+Currently not all of these classes have help files, see the HelpSource directory. In many cases the code listing for this section will make use of the classes clear. Further help files will be added in due course.
 
 Code for the other sections of this chapter is available elsewhere: [26.3 INScore](https://github.com/richardhoadley/inscoremit) ; [26.4 Fosc](https://github.com/n-armstrong/fosc).
 
