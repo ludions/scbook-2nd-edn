@@ -14,8 +14,8 @@ ludions.com
 
 
 SMuFLtools {
-	var <filePath, <curGlyph, <dictGlyphClasses, <singleGlyphDict;
-	var <searchKeys, allKeys, <glyphName, <searchStr;
+	var <filePath, <dictGlyphClasses, singleGlyphDict;
+	var <searchKeys, allKeys, <glyphName, searchStr;
 	var <glyphCodepoint, <glyphDesc, <>verbose;
 
 	*new {|filePath, verbose=false|
@@ -31,7 +31,7 @@ SMuFLtools {
 		});
 
 		if(File.exists(filePath) and: {this.checkJSON(filePath)}) {
-			this.creatDictionary(filePath);
+			this.createDictionary(filePath);
 		} {
 			this.pathErrorMsg;
 			if(filePathNil) {
@@ -56,7 +56,7 @@ SMuFLtools {
 			if(
 				File.exists(filePath) and: {this.checkJSON(filePath)}
 			) {
-				this.creatDictionary(filePath);
+				this.createDictionary(filePath);
 			} {
 				this.pathErrorMsg;
 			};
@@ -82,7 +82,7 @@ SMuFLtools {
 		}
 	}
 
-	creatDictionary {|aFile|
+	createDictionary {|aFile|
 		var file;
 		file = File(aFile,"r");
 		dictGlyphClasses = file.readAllString.parseYAML;
@@ -183,8 +183,12 @@ SMuFLtools {
 	}
 
 	postGlyphInfo {
+		if(glyphName.notNil){
 		if(verbose, {format("%, description: %", glyphName, glyphDesc).postln});
 		^(glyphName -> glyphCodepoint).asCompileString.postln;
+		}{
+			^"No glyph selected"
+		}
 
 	}
 
