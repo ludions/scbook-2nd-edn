@@ -44,8 +44,8 @@ SMuFLtools {
 		^this
 	}
 
-	gui {|scale|
-		SMuFLtoolsGUI.new(this, scale);
+	gui {
+		SMuFLtoolsGUI.new(this); // , scale);
 		^this
 	}
 
@@ -106,7 +106,7 @@ SMuFLtools {
 
 	search {|str|
 		var print = false;
-		searchStr = str;
+		searchStr = str.asString;
 		this.changed(\searchStr, searchStr);
 		searchKeys = allKeys.select({ arg item, i; item.containsi(str) });
 		if(searchKeys.isEmpty, {
@@ -119,7 +119,7 @@ SMuFLtools {
 			if(searchKeys.size==1){
 				print = true
 			};
-			this.setGlyphName_(searchKeys[0], print: print);
+			this.setGlyphName(searchKeys[0], print: print);
 			if(verbose, {this.printSearchResults});
 		});
 		^this
@@ -145,12 +145,12 @@ SMuFLtools {
 	selectGlyph {|name|
 		name = name.asString;
 		if(glyphName != name){
-			this.setGlyphName_(name, true);
+			this.setGlyphName(name, true);
 		}
 		^this
 	}
 
-	setGlyphName_ { |nameStr, reset = false, print = true|
+	setGlyphName { |nameStr, reset = false, print = true|
 		if(reset){this.reset}; // clear existing search
 		nameStr = nameStr.asString;
 		singleGlyphDict = dictGlyphClasses.atFail(nameStr, {
