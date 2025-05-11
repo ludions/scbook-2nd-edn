@@ -14,8 +14,7 @@ ludions.com
 
 
 SMuFLtools {
-	var <filePath, <jsonData, <curGlyph;
-	var <dictGlyphClasses, <singleGlyphDict;
+	var <filePath, <curGlyph, <dictGlyphClasses, <singleGlyphDict;
 	var <searchKeys, allKeys, <glyphName, <searchStr;
 	var <glyphCodepoint, <glyphDesc, <>verbose;
 
@@ -120,7 +119,7 @@ SMuFLtools {
 			if(searchKeys.size==1){
 				print = true
 			};
-			this.glyphName_(searchKeys[0], print: print);
+			this.setGlyphName_(searchKeys[0], print: print);
 			if(verbose, {this.printSearchResults});
 		});
 		^this
@@ -146,12 +145,12 @@ SMuFLtools {
 	selectGlyph {|name|
 		name = name.asString;
 		if(glyphName != name){
-			this.glyphName_(name, true);
+			this.setGlyphName_(name, true);
 		}
 		^this
 	}
 
-	glyphName_ { |nameStr, reset = false, print = true|
+	setGlyphName_ { |nameStr, reset = false, print = true|
 		if(reset){this.reset}; // clear existing search
 		nameStr = nameStr.asString;
 		singleGlyphDict = dictGlyphClasses.atFail(nameStr, {
