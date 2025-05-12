@@ -16,15 +16,16 @@ ludions.com
 SMuFLtools {
 	var <filePath, <dictGlyphClasses, singleGlyphDict;
 	var <searchKeys, allKeys, <glyphName, <searchStr;
-	var <glyphCodepoint, <glyphDesc, <>verbose;
+	var <glyphCodepoint, <glyphDesc, <>verbose, <fontName;
 
-	*new {|filePath, verbose=false|
-		^super.new.init(filePath, verbose);
+	*new {|filePath, verbose=false, fontName = "Bravura"|
+		^super.new.init(filePath, verbose, fontName);
 	}
-	init {|afilePath, aVerbose|
+	init {|afilePath, aVerbose, aFontName|
 		var filePathNil;
 		filePath = afilePath;
 		verbose = aVerbose;
+		fontName = aFontName;
 		if(filePathNil = filePath.isNil, {
 			filePath = this.class.filenameSymbol.asString.dirname.dirname ++ "/data/SMuFL-tools-demo-data.json";
 			"Demo json data will be loaded as filePath arg is empty".postln;
@@ -44,8 +45,8 @@ SMuFLtools {
 		^this
 	}
 
-	gui {
-		SMuFLtoolsGUI.new(this); // , scale);
+	gui {|scale, usePtSize = false|
+		SMuFLtoolsGUI.new(this, scale, usePtSize, fontName);
 		^this
 	}
 
@@ -186,8 +187,8 @@ SMuFLtools {
 
 	postGlyphInfo {
 		if(glyphName.notNil){
-		if(verbose, {format("%, description: %", glyphName, glyphDesc).postln});
-		^(glyphName -> glyphCodepoint).asCompileString.postln;
+			if(verbose, {format("%, description: %", glyphName, glyphDesc).postln});
+			^(glyphName -> glyphCodepoint).asCompileString.postln;
 		}{
 			^"No glyph selected"
 		}
@@ -196,7 +197,7 @@ SMuFLtools {
 
 	postGlyphDict {
 		if(glyphName.notNil){
-		^(glyphName -> singleGlyphDict).asCompileString.postln
+			^(glyphName -> singleGlyphDict).asCompileString.postln
 		}{
 			^this
 		}
@@ -206,18 +207,21 @@ SMuFLtools {
 
 
 SMuFLtoolsGUI {
-	var model, <win, <>bkgCol, <scale;
-	var <>searchField, <>listView, col1Width = 220;
+	var model, <win, <>bkgCol, <scale, <usePtSize;
+	var <>searchField, <>listView, fontName;
 	var <>nameStatic, <>codeStatic, <>descrStatic, <>bigGlyph;
 
-	*new { |model, scale|
-		^super.new.init(model, scale);
+	*new { |model, scale, usePtSize=false, fontName= "Bravura"|
+		^super.new.init(model, scale, usePtSize, fontName);
 	}
-	init { |argModel, argScale|
+
+	init { |argModel, argScale, argUsePtSize, aFontName|
 
 		model = argModel;
 		model.addDependant(this);
 		scale = argScale ?? 1.0;
+		usePtSize = argUsePtSize;
+		fontName = aFontName;
 
 		bkgCol = Color.grey(alpha:0.1);
 
@@ -226,58 +230,115 @@ SMuFLtoolsGUI {
 
 	}
 
+
 	makeWin {
-		win = Window.new("SMuFL Font GUI", Rect(128, 64, 440 * scale, 400 * scale)).layout_(
-			HLayout(
-				VLayout(
-					[HLayout(
-						StaticText(win, 110@80 * scale).string_("Search"),
-						[searchField = TextField()
-							.action_{ arg view;
-								model.search(view.value);
-								view.string = view.value;
-							}
-							.maxWidth_(110 * scale),
-							align: \left]
-					)],
-					[listView = ListView(win, 220@200 * scale)
-						.maxWidth_(col1Width)
-						.background_(Color.white)
-						.hiliteColor_(Color.yellow(alpha:0.6))
-						.action_({ arg sbs;
-							model.setGlyphName(listView.items[sbs.value]);
-						})
-						.enterKeyAction_({ arg sbs;
-							model.setGlyphName(listView.items[sbs.value]);
-							model.postGlyphDict
-						})
-					]
-				),
-				[VLayout(
-					[nameStatic = StaticText()
-						.string_("Name: ")
-						.minSize_(220@40 * scale)
-						.background_(bkgCol)
-						, align: \topLeft],
-					[codeStatic = StaticText()
-						.string_("Code point:")
-						.background_(bkgCol)
-						.minSize_(220@40 * scale)
-						, align: \topLeft],
-					[descrStatic = StaticText()
-						.string_("Description: ")
-						.background_(bkgCol)
-						.minSize_(220@80 * scale),
-						align: \topLeft],
-					[bigGlyph = StaticText().string_("")
-						.font_(Font("Bravura", 84 * scale))
-						.background_(bkgCol)
-						.minSize_(220@240 * scale)
-						, align: \topLeft]
-				), align: \top]
-			)
-		).front;
+		// initial dimensions
+		var baseWidth = 440;
+		var baseHeight = 400;
+		var baseSMuFLFontSize = 84;
+		var baseUIFontSize = 12;
+		var baseColWidth = 220;
+
+		// calculate scaled dimensions
+		var scaledHeight, scaledWidth, scaledSMuFLFontSize, scaledUIFontSize, scaledColWidth;
+		var widthScaleFactor = 1.0;
+		var fontScaleFactor = 1.0;
+		var uiFont, bravuraFont;
+
+		// ccaling calculations
+		if(scale <= 1) {
+			scaledWidth = baseWidth.asInteger;
+			scaledHeight = baseHeight.asInteger;
+			scaledSMuFLFontSize = baseSMuFLFontSize;
+			scaledUIFontSize = baseUIFontSize;
+			scaledColWidth = baseColWidth.asInteger;
+		} {
+			widthScaleFactor = 1.0 + ((scale - 1.0) * 0.5);
+			fontScaleFactor = widthScaleFactor;
+
+			scaledWidth = (baseWidth * widthScaleFactor).asInteger;
+			scaledHeight = (baseHeight * scale).asInteger;
+			scaledColWidth = (baseColWidth * widthScaleFactor).asInteger;
+
+			scaledSMuFLFontSize = (baseSMuFLFontSize * fontScaleFactor).round.asInteger;
+			scaledUIFontSize = (baseUIFontSize * fontScaleFactor).round.asInteger;
+		};
+
+		// Create font objects with user-specified point size setting
+		uiFont = Font(Font.defaultSansFace, scaledUIFontSize, usePointSize: usePtSize);
+		bravuraFont = Font(fontName, scaledSMuFLFontSize, usePointSize: usePtSize);
+
+		// make window
+		win = Window.new("SMuFL Font GUI",
+			Rect(128, 64, scaledWidth, scaledHeight)
+		);
+
+		// window layout with scaling
+		win.layout = HLayout(
+			VLayout(
+				[HLayout(
+					StaticText(win, scaledColWidth * 0.5 @ (80 * scale))
+					.string_("Search")
+					.font_(uiFont),
+					[searchField = TextField()
+						.action_{ arg view;
+							model.search(view.value);
+							view.string = view.value;
+						}
+						.font_(uiFont)
+						.maxWidth_(scaledColWidth * 0.5),
+						align: \left]
+				)],
+				[listView = ListView(win, scaledColWidth @ (200 * scale))
+					.maxWidth_(scaledColWidth)
+					.font_(uiFont)
+					.background_(Color.white)
+					.hiliteColor_(Color.yellow(alpha:0.6))
+					.action_({ arg sbs;
+						model.setGlyphName(listView.items[sbs.value]);
+					})
+					.enterKeyAction_({ arg sbs;
+						model.setGlyphName(listView.items[sbs.value]);
+						model.postGlyphDict
+					})
+				]
+			),
+			[VLayout(
+				[nameStatic = StaticText()
+					.string_("Name: ")
+					.font_(uiFont)
+					.minSize_(scaledColWidth @ (40 * scale))
+					.background_(bkgCol)
+					, align: \topLeft],
+				[codeStatic = StaticText()
+					.string_("Code point:")
+					.font_(uiFont)
+					.background_(bkgCol)
+					.minSize_(scaledColWidth @ (40 * scale))
+					, align: \topLeft],
+				[descrStatic = StaticText()
+					.string_("Description: ")
+					.font_(uiFont)
+					.background_(bkgCol)
+					.minSize_(scaledColWidth @ (80 * scale)),
+					align: \topLeft],
+				[bigGlyph = StaticText().string_("")
+					.font_(bravuraFont)
+					.background_(bkgCol)
+					.minSize_(scaledColWidth @ (240 * scale))
+					, align: \topLeft]
+			), align: \top]
+		);
+
+		// min win size: restrict shrinking width to 80%, and height to initial value
+		win.view.minSize = Size(scaledWidth * 0.8, scaledHeight);
+
+		// max win size: restrict width to initial value, use a large value for height
+		win.view.maxSize = Size(scaledWidth, 65535);
+
+		win.front;
 	}
+
 
 	updateGlyphName {|name|
 		var listViewIndex;

@@ -21,6 +21,10 @@ Path to the SMuFL JSON data. If Nil, demo data is used if present at ../data/SMu
 ARGUMENT:: verbose
 a Boolean, posts further information to the Post Window for some class instance methods.
 
+ARGUMENT:: fontName
+A SMuFL font name String
+
+DISCUSSION::
 code::
 f = SMuFLtools.new
 ::
@@ -63,12 +67,23 @@ METHOD:: pathFinder
 conveniance method, opens a GUI picker to select a JSON data file
 
 METHOD:: gui
-Makes a instance of link::Classes/SMuFLtoolsGUI:: to navigate SMuFL glyphs via a GUI Window.
-N.B. It is not necessary to use this class directly other than via this method.
+Makes a GUI Window to navigate SMuFL glyphs.
 
+ARGUMENT:: scale
+A Float representing the scaling factor for the GUI window. Default is 1.0, allows larger values.
+
+ARGUMENT:: usePtSize
+A Boolean that determines whether font sizes are interpreted as points (true) or pixels (false). Default is false. See discussion in link::Classes/Font::.
+
+DISCUSSION::
+This method creates an instance of link::Classes/SMuFLtoolsGUI::. N.B. It is not necessary to use this class directly other than via this method.
 code::
-f.gui
+f = SMuFLtools.new;
+// a larger window
+f.gui(2);
 ::
+
+
 
 
 subsection:: Selecting a glyph
@@ -79,14 +94,19 @@ Selects a glyph and calls postGlyphInfo
 ARGUMENT:: name
 the name of the selected glyph, as either a String or Symbol
 
+DISCUSSION::
 code::
-f.selectGlyph(\gClef)
+f = SMuFLtools.new;
+f.selectGlyph(\accidentalSharp)
 ::
 
 METHOD:: postGlyphInfo
 Posts the name and Unicode codepoint of a selected glyph as an Association.
 
+DISCUSSION::
 code::
+f = SMuFLtools.new;
+f.selectGlyph(\gClef);
 f.postGlyphInfo // ("gClef" -> "U+E050")
 ::
 
@@ -161,7 +181,7 @@ f = SMuFLtools.new
 f.pathFinder // GUI picker
 
 // GUI may be useful, is optional
-f.gui
+f.gui(usePtSize: true)
 
 // select a glyph directly by its full name
 f.selectGlyph(\noteheadWhole)
