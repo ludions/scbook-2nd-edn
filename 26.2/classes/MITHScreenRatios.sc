@@ -1,7 +1,7 @@
 
 /*
-ScreenRatios
-ScreenRatiosView
+MITHScreenRatios
+MITHScreenRatiosView
 
 Dependency: RatioArray
 
@@ -23,8 +23,8 @@ MITHScreenRatios {
 			"r16_9" -> RatioArray([16, 9], "minor 7th"),
 			"r4_3" -> RatioArray([4, 3], "perfect 4th"),
 			"r3_2" -> RatioArray([3, 2], "perfect 5th"),
-			"iso" -> RatioArray([14142, 10000], "tritone / sqrt(2)"),
-			"phi" -> RatioArray([1618, 1000], "(1 + sqrt(5))/2"),
+			"iso" -> RatioArray([7071, 5000], "tritone / sqrt(2)"),
+			"phi" -> RatioArray([809, 500], "(φ: (1 + sqrt(5))/2"),
 			"usLetter" -> RatioArray([22, 17], "US Letter paper"),
 			"jisB4" -> RatioArray([364, 257], "nearly iso"),
 			"usMemo" -> RatioArray([17, 11], "Associated Music Publishers (AMP) mini scores"),
@@ -41,7 +41,7 @@ MITHScreenRatios {
 			"r16_15" -> RatioArray([16, 15], "just intonation minor semitone"),
 			"r18_17" -> RatioArray([18, 17], "equal temperament semitone"),
 			"r25_24" -> RatioArray([25, 24], "just intonation major semitone"),
-			"r3sqrt" -> RatioArray([1732, 1000], "3.sqrt")
+			"r3sqrt" -> RatioArray([433, 250], "3.sqrt")
 		]);
 	}
 
@@ -50,41 +50,100 @@ MITHScreenRatios {
 		^super.new.init;
 	}
 
-	ratio {|ratio|
-		var arr, rtnRatio, result, gcdValue;
+	ratio { |ratio|
+		var arr, result, gcdValue;
 
-		if(ratio.isString or: {ratio.isKindOf(Symbol)}) {
-			rtnRatio = ratio.asString;
-			result = ratiosDict[rtnRatio];
+		case
+		{ratio.isString or: {ratio.isKindOf(Symbol)}} {
+			ratio = ratio.asString;
+			result = ratiosDict[ratio];
 
 			// convert RatioArray to plain array for compatibility
-			^if(result.notNil) {
-				result.asArray  // return array, not RatioArray
+			if(result.notNil) {
+				^result.asArray  // return array, not RatioArray
 			} {
-				nil
+				"No ratio with that name found".error;
+				^nil
 			};
+		}
+		// array input delegates to reduceRatio
+		{ratio.isKindOf(Collection)} {
+			^this.reduceRatio(ratio);
 		};
 
-		// direct array input / normalize the ratio
-		if(ratio.isKindOf(Collection) and: {ratio.size==2}) {
-			// get raw array if a RatioArray
-			arr = if(ratio.isKindOf(RatioArray)) {
-				ratio.asArray;
-			} {
-				ratio;
-			};
-
-			// normalize ratio
-			arr = arr.asInteger.sort.reverse;
-			gcdValue = arr[0].gcd(arr[1]);
-			arr = (arr / gcdValue).asInteger;
-
-			// rtn normalized Array, not a RatioArray
-			^arr;
-		};
-
+		"No ratio found".error;
 		^nil  // no valid ratio found
+
 	}
+
+	reduceRatio { |ratio|
+		var arr, gcdVal;
+
+		// simplify the ratio
+		if(ratio.isKindOf(Collection) and: {ratio.size==2}) {
+			arr = ratio.collect{|i| i.round.asInteger}; // in case of Floats
+			// normalise ratio
+			arr = arr.sort.reverse;
+			gcdVal = arr[0].gcd(arr[1]);
+			if(gcdVal == 0) {
+				"Cannot reduce ratio with zero element".error;
+				^nil;
+			};
+			arr = (arr / gcdVal).asInteger;
+			^arr;
+		}{
+			^nil // no valid ratio found
+		};
+	}
+
+
+	ratioToCents { |ratio|
+		var ratioArray, num, denom, frequencyRatio;
+
+		// Handle different input formats
+		ratioArray = case
+		{ ratio.isKindOf(Symbol) } { this.getRatioObject(ratio) }
+		{ ratio.isKindOf(Array) and: {ratio.size==2}} { ratio };
+
+		if(ratioArray.isKindOf(RatioArray)){
+			ratioArray = ratioArray.ratio
+		};
+
+
+		if(ratioArray.notNil){
+
+			ratioArray = ratioArray.sort.reverse;
+			num = ratioArray[0];
+			denom = ratioArray[1];
+			frequencyRatio = num / denom;
+
+			// calculate cents using the formula: cents = 1200 × log₂(frequency ratio)
+			^(1200 * (frequencyRatio.log / 2.log)).round.asInteger;
+		}{
+
+			("Invalid ratio name or Array size").error;
+			^this
+		}
+	}
+
+
+	asRatio { |decimal=1.0, maxDenominator=100|
+		var frac, num, denom;
+
+		// NB: asFraction returns [denominator, divisor]
+		frac = decimal.abs.asFraction(maxDenominator, true);
+
+		denom = frac[0];
+		num = frac[1];
+
+		// larger number is first for consistency
+		^if(num >= denom) {
+			[num, denom]
+		} {
+			[denom, num]
+		};
+	}
+
 
 
 	getRatioObject {|name|
@@ -166,7 +225,7 @@ MITHScreenRatios {
 		list = list.collect({ |item|
 			key = item[0];
 			ratioArr = item[1];
-			float = this.decimal(ratioArr[0], ratioArr[1]);
+			float = this.asDecimal(ratioArr[0], ratioArr[1]);
 			[key, ratioArr, float]
 		});
 		^list
@@ -245,25 +304,26 @@ MITHScreenRatios {
 
 	// pretty printing
 	listRatios { |array|
-		var list, float;
+		var list, float, cents, ratio;
 		array = array ?? { this.ratiosDict.asSortedArray };
 		list = this.ratiosListWithFloats(array);
-		list = list.collect{|item| [item[0], item[1].asArray, item[1].description, item[2],]};
+		list = list.collect{|item|
+			ratio = item[1].asArray;
+			cents = this.ratioToCents(ratio);
+			[item[0], ratio, item[1].description, item[2], cents]
+		};
 		list.do({|item|
-			("\\"++format("%  % \"%\" %", item[0], item[1], item[2], item[3])).postln
+			("\\"++format("%  % \"%\" % | cents: %", item[0], item[1], item[2], item[3], item[4])).postln
 		});
 		^list
 	}
-
-	// syntactic sugar
-	ratiosList { |array| ^this.listRatios(array)}
 
 	// Array elements have form:
 	// e.g. [ r18_17, RatioArray([ 18, 17 ] | "equal temperament semitone") ]
 	sortRatios { |array|
 		array = array ?? { this.ratiosDict.asSortedArray };
 		^array.sort({arg a, b;
-			this.decimal(a[1][0], a[1][1]) > this.decimal(b[1][0], b[1][1])
+			this.asDecimal(a[1][0], a[1][1]) > this.asDecimal(b[1][0], b[1][1])
 	});	}
 
 	printFancyRatio {|ratio|
@@ -278,8 +338,8 @@ MITHScreenRatios {
 	closestRatio {|ratio|
 		var rtn, float, rFlList, matchFloat, reducRatio, matchDist;
 		reducRatio = this.ratio(ratio);
-		float = this.decimal(*reducRatio);
-		rFlList = this.decimalRatios.collect{|i, j| i[1]};
+		float = this.asDecimal(*reducRatio);
+		rFlList = this.asDecimalRatios.collect{|i, j| i[1]};
 		matchFloat = float.nearestInList(rFlList.reverse);
 		matchDist = (float - matchFloat).abs;
 		rtn = this.ratiosListWithFloats[rFlList.indexOf(matchFloat)];
@@ -289,7 +349,7 @@ MITHScreenRatios {
 		^rtn[1]
 	}
 
-	decimal {|num, denom|
+	asDecimal {|num, denom|
 		var arr = [num, denom].sort.reverse; // ensure largest first
 		^(arr[1]/arr[0]).round(0.001)
 	}
@@ -297,7 +357,7 @@ MITHScreenRatios {
 	decimalRatios {
 		var list, float;
 		list = this.sortRatios;
-		^list.collect{|i| [i[0], this.decimal(i[1][1], i[1][0]).round(0.001)]}
+		^list.collect{|i| [i[0], this.asDecimal(i[1][1], i[1][0]).round(0.001)]}
 	}
 
 	rToDims {|ratio, dims, landscape=true|
