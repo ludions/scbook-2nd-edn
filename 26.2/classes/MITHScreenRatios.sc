@@ -19,6 +19,7 @@ MITHScreenRatios {
 
 	*ratiosDict {
 		^Dictionary.with(*[
+			// RatioArray maintains backwards compatability with the SuperCollider Boook, 2nd Edn, 2025
 			"square" -> RatioArray([1, 1], "unison"),
 			"r16_9" -> RatioArray([16, 9], "minor 7th"),
 			"r4_3" -> RatioArray([4, 3], "perfect 4th"),
@@ -49,6 +50,15 @@ MITHScreenRatios {
 	*new {
 		^super.new.init;
 	}
+
+	init {
+		screenDims = this.getScreenSize;
+		ratiosDict = MITHScreenRatios.ratiosDict;
+		maxDims =  screenDims; // default for initial view
+		viewDims = screenDims/10; // default for initial view
+		^this
+	}
+
 
 	ratio { |ratio|
 		var arr, result, gcdValue;
@@ -96,13 +106,13 @@ MITHScreenRatios {
 		};
 	}
 
-
+	// see also ratioToDecimal
 	ratioToCents { |ratio|
 		var ratioArray, num, denom, frequencyRatio;
 
-		// Handle different input formats
+		// allow different input formats
 		ratioArray = case
-		{ ratio.isKindOf(Symbol) } { this.getRatioObject(ratio) }
+		{ ratio.isKindOf(Symbol) } { this.ratioObject.value.array }
 		{ ratio.isKindOf(Array) and: {ratio.size==2}} { ratio };
 
 		if(ratioArray.isKindOf(RatioArray)){
@@ -112,7 +122,7 @@ MITHScreenRatios {
 
 		if(ratioArray.notNil){
 
-			ratioArray = ratioArray.sort.reverse;
+			ratioArray = ratioArray.copy.sort.reverse;
 			num = ratioArray[0];
 			denom = ratioArray[1];
 			frequencyRatio = num / denom;
@@ -127,6 +137,7 @@ MITHScreenRatios {
 	}
 
 
+	// translate from Float to ratio Array
 	asRatio { |decimal=1.0, maxDenominator=100|
 		var frac, num, denom;
 
@@ -144,43 +155,24 @@ MITHScreenRatios {
 		};
 	}
 
-
-
-	getRatioObject {|name|
-		^ratiosDict[name.asString];
+	// returns Association
+	ratioObject { |key|
+		key = key.asString;
+		^ratiosDict.associationAtFail(key, {
+			"No ratio item at that key".error
+			^nil
+		})
 	}
 
-	resetDims {
-		viewDims = screenDims;
-		this.changed(\viewDims, viewDims);
-		^viewDims
-	}
-
-	init {
-		screenDims = this.getScreenSize;
-		ratiosDict = MITHScreenRatios.ratiosDict;
-		maxDims =  screenDims; // default for initial view
-		viewDims = screenDims/10; // default for initial view
-		^this
-	}
-
-	maxDims_{|arr|
-		^maxDims = this.checkDims(arr);
-	}
-
-
-	checkDims {|arr|
-		if(arr.isKindOf(SimpleNumber)){
-			arr = arr.dup
-		};
-		^arr.asInteger
-	}
-
-
-	viewDims_ {|arr|
-		viewDims = this.checkDims(arr);
-		this.changed(\viewDims, viewDims);
-		^this
+	// returns an array including ratio data as decimal and in cents
+	ratioObjectData { |ratioObject|
+		var key, ratio, descr, arr, dec, cents;
+		key = ratioObject.key;
+		ratio = ratioObject.value.array; // see RatioArray!
+		descr = ratioObject.value.description;
+		dec = this.ratioToDecimal(ratio);
+		cents = this.ratioToCents(ratio);
+		^[key, ratio, descr, dec, cents]
 	}
 
 	addRatio {|key, ratioArr, description=""|
@@ -190,7 +182,6 @@ MITHScreenRatios {
 			"adding a ratio requires a key String or Symbol".error;
 			^this
 		};
-
 		if(ratioArr.isKindOf(RatioArray)) {
 			// already a RatioArray, use it directly
 			ratio = this.ratio(ratioArr);
@@ -201,9 +192,13 @@ MITHScreenRatios {
 				description
 			);
 		};
-
 		// add to dictionary
 		ratiosDict = ratiosDict.add(key.asString -> ratio);
+		^this
+	}
+
+	removeRatio { |key|
+		ratiosDict = ratiosDict.removeAt(key);
 		^this
 	}
 
@@ -218,26 +213,79 @@ MITHScreenRatios {
 		}
 	}
 
-	ratiosListWithFloats { |array|
-		var list, float, key, ratioArr;
-		array = array ?? { this.ratiosDict.asSortedArray };
-		list = this.sortRatios(array);
-		list = list.collect({ |item|
-			key = item[0];
-			ratioArr = item[1];
-			float = this.asDecimal(ratioArr[0], ratioArr[1]);
-			[key, ratioArr, float]
+
+	// Array elements have form:
+	// e.g. [ r18_17, RatioArray([ 18, 17 ] | "equal temperament semitone") ]
+	sortRatios { |array|
+		array = array ?? { this.ratiosDict.asAssociations };
+		// transform ratio object Association into [key, ratio, descr, dec, cents]
+		array = array.collect{|item| this.ratioObjectData(item)}
+		^array.sort({arg a, b;
+			a[3]> b[3]
 		});
-		^list
 	}
 
 
+	// pretty printing
+	postRatioArr {|ratioArr|
+		// [key, ratio, descr, dec, cents]
+		("\\"++format("% : % \"%\" % | % cents",
+			ratioArr[0], ratioArr[1], ratioArr[2], ratioArr[3], ratioArr[4])
+		).postln;
+	}
+
+
+	// pretty printing
+	listRatios { |array|
+		var data;
+		array = array ?? { this.ratiosDict.asAssociations };
+		array = this.sortRatios(array);
+		array.do{|item| this.postRatioArr(item)}; // post
+		^this
+	}
+
+	// from ratio name
+	postRatio { |name|
+		var obj, data;
+		obj = this.ratioObject(name); // will post error as needed
+		if(obj.notNil){
+			data = this.ratioObjectData(obj);
+			this.postRatioArr(data); // post
+			^obj
+		}{
+			^this
+		}
+	}
+
+	closestRatio {|ratio|
+		var rtn, float, rFlList, matchFloat, reducRatio;
+		var sortedRatios, matchDist, matchIndex, ratioObject;
+		reducRatio = this.ratio(ratio);
+		float = this.ratioToDecimal(reducRatio);
+		sortedRatios = this.sortRatios;
+		rFlList = sortedRatios.collect{|i, j| i[3]};
+		matchFloat = float.nearestInList(rFlList.reverse);
+		matchIndex = rFlList.indexOf(matchFloat);
+		matchDist = (float - matchFloat).abs;
+		rtn = sortedRatios[matchIndex];
+		format("Ratio of % is % (%)", ratio, reducRatio, float.round(0.001)).postln;
+		format("Distance of % from: ", matchDist.round(0.001)).postln;
+		this.postRatioArr(rtn); // post
+		^this.ratioObject(rtn[0])
+	}
+
+	ratioToDecimal { |arr|
+		arr = arr.copy.sort.reverse; // ensure largest first
+		^(arr[1]/arr[0]).round(0.001)
+	}
+
+	// returns Dictionary
 	searchRatios { |searchTerm, printResults=true|
 
 		var results, isNumeric, termNum;
 		var termStr, found, ratioArr;
 
-		results = Array.new;
+		results = Dictionary.new;
 		isNumeric = false;
 		termNum = nil;
 		termStr = searchTerm.asString;
@@ -285,7 +333,7 @@ MITHScreenRatios {
 
 			// add to results if found
 			if(found) {
-				results = results.add([key, value]);
+				results = results.add((key -> value));
 			};
 		});
 
@@ -293,7 +341,7 @@ MITHScreenRatios {
 		if(printResults) {
 			if(results.size > 0) {
 				("Found " ++ results.size ++ " matching ratios:").postln;
-				this.listRatios(results)
+				this.listRatios(results.asAssociations)
 			} {
 				"No matching ratios found.".postln;
 			};
@@ -302,66 +350,33 @@ MITHScreenRatios {
 		^results;
 	}
 
-	// pretty printing
-	listRatios { |array|
-		var list, float, cents, ratio;
-		array = array ?? { this.ratiosDict.asSortedArray };
-		list = this.ratiosListWithFloats(array);
-		list = list.collect{|item|
-			ratio = item[1].asArray;
-			cents = this.ratioToCents(ratio);
-			[item[0], ratio, item[1].description, item[2], cents]
+
+	// GUI  / screen methods ***************
+
+	resetDims {
+		viewDims = screenDims;
+		this.changed(\viewDims, viewDims);
+		^viewDims
+	}
+
+
+	maxDims_{|arr|
+		^maxDims = this.checkDims(arr);
+	}
+
+
+	checkDims {|arr|
+		if(arr.isKindOf(SimpleNumber)){
+			arr = arr.dup
 		};
-		list.do({|item|
-			("\\"++format("%  % \"%\" % | cents: %", item[0], item[1], item[2], item[3], item[4])).postln
-		});
-		^list
+		^arr.asInteger
 	}
 
-	// Array elements have form:
-	// e.g. [ r18_17, RatioArray([ 18, 17 ] | "equal temperament semitone") ]
-	sortRatios { |array|
-		array = array ?? { this.ratiosDict.asSortedArray };
-		^array.sort({arg a, b;
-			this.asDecimal(a[1][0], a[1][1]) > this.asDecimal(b[1][0], b[1][1])
-	});	}
 
-	printFancyRatio {|ratio|
-		("\\"++format("% : %  (%)", ratio[0], ratio[1], ratio[2])).postln;
+	viewDims_ {|arr|
+		viewDims = this.checkDims(arr);
+		this.changed(\viewDims, viewDims);
 		^this
-	}
-
-	closestMatch  { |ratio|
-		^this.closestRatio(ratio)
-	}
-
-	closestRatio {|ratio|
-		var rtn, float, rFlList, matchFloat, reducRatio, matchDist;
-		reducRatio = this.ratio(ratio);
-		float = this.asDecimal(*reducRatio);
-		rFlList = this.asDecimalRatios.collect{|i, j| i[1]};
-		matchFloat = float.nearestInList(rFlList.reverse);
-		matchDist = (float - matchFloat).abs;
-		rtn = this.ratiosListWithFloats[rFlList.indexOf(matchFloat)];
-		format("Ratio of % is % (%)", ratio, reducRatio, float.round(0.001)).postln;
-		format("Distance of % from: ", matchDist.round(0.001)).postln;
-		this.printFancyRatio(rtn);
-		^rtn[1]
-	}
-
-	asDecimal {|num, denom|
-		var arr = [num, denom].sort.reverse; // ensure largest first
-		^(arr[1]/arr[0]).round(0.001)
-	}
-
-	decimalRatios {
-		var list, float;
-		list = this.sortRatios;
-		^list.collect{|i| [i[0], this.asDecimal(i[1][1], i[1][0]).round(0.001)]}
-	}
-
-	rToDims {|ratio, dims, landscape=true|
-		^this.ratioToDims(ratio, dims, landscape)
 	}
 
 
