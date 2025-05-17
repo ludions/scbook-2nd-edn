@@ -1,0 +1,300 @@
+
+title:: MITHScreenRatios
+summary:: A utility for comparing aspect ratios and calculating rectangle dimensions
+related:: Classes/MITHRatiosView
+categories:: geometry, gui, scbook
+
+description::
+A utility for calculating dimensions and aspect ratios of rectangles, particularly for GUI design. Provides a dictionary of common ratios with musical interval relationships and allows conversion between ratios, cents, and dimensions. Includes methods to find the closest standard ratio to arbitrary dimensions, convert between different representations of musical intervals, and create windows with specific proportions.
+
+classmethods::
+
+method:: new
+Returns a new MITHScreenRatios instance.
+
+method:: ratiosDict
+Returns a Dictionary of predefined ratios. The dictionary contains named ratios mapped to arrays in the format [[numerator, denominator], "description"].
+
+instancemethods::
+
+private:: init, checkDims, getScreenSize, prProcessScaledRatio
+
+subsection:: Dictionary Management
+
+method:: ratiosDict
+An instance of the class method of the same name. This instance can be modified with addRatio, addRatioDict, and removeRatio.
+
+method:: addRatioDict
+Add or replace multiple entries in the ratio dictionary.
+argument:: dict
+A Dictionary with entries in the format key -> [[num, denom], "description"]
+argument:: replace
+Boolean, if true replaces the entire dictionary, if false (default) merges with existing dictionary
+
+method:: addRatio
+Add a single custom ratio to the ratios dictionary.
+argument:: key
+Symbol or String name for the new ratio
+argument:: ratioArr
+Array [numerator, denominator]
+argument:: description
+Optional description string
+
+method:: removeRatio
+Remove a ratio from the dictionary.
+argument:: key
+Symbol or String name of the ratio to remove
+
+method:: ratioObject
+Returns an Association for a named ratio.
+argument:: key
+Symbol or String name of the ratio
+returns:: Association
+
+subsection:: Ratio Operations
+
+method:: ratio
+Polymorphic method that either gets a named ratio from the dictionary or reduces an array to its simplest ratio form.
+argument:: input
+A Symbol, String, or Array [num, denom]
+returns:: Array [numerator, denominator]
+
+method:: getRatio
+Gets a ratio array from the dictionary by name.
+argument:: ratioName
+Symbol or String name of the ratio
+returns:: Array [numerator, denominator]
+
+method:: reduceRatio
+Reduces a ratio to its simplest form. Can handle floating-point inputs.
+argument:: ratioArray
+Array [numerator, denominator]
+returns:: Array [numerator, denominator] in simplified form
+
+method:: ratioToDecimal
+Converts a ratio to its decimal representation.
+argument:: arr
+Array [numerator, denominator]
+argument:: precision
+Integer specifying decimal places (default: 4)
+returns:: Float
+
+method:: asRatio
+Converts a decimal value to the closest ratio with denominator <= maxDenominator.
+argument:: decimal
+Float value to convert
+argument:: maxDenominator
+Maximum denominator to use in approximation (default: 100)
+returns:: Array [numerator, denominator]
+
+method:: ratioToCents
+Converts a ratio to cents (musical interval measurement).
+argument:: ratio
+Symbol, String, or Array [numerator, denominator]
+returns:: Integer number of cents
+
+method:: centsToRatio
+Converts cents to the closest simple ratio.
+argument:: cents
+Number of cents
+argument:: maxDenominator
+Maximum denominator to use in approximation (default: 100)
+returns:: Array [numerator, denominator]
+
+method:: diffInCents
+Calculates the difference in cents between two ratios.
+argument:: arr1
+First ratio (Symbol, String, or Array)
+argument:: arr2
+Second ratio (Symbol, String, or Array)
+argument:: precision
+Decimal precision for the result (default: 2)
+returns:: Float difference in cents
+
+method:: ratioDescr
+Returns the description for a named ratio.
+argument:: name
+Symbol or String name of the ratio
+returns:: String description or nil
+
+subsection:: Search and Analysis
+
+method:: searchRatios
+Search for ratios by name, value, or description.
+argument:: searchTerm
+Symbol, String, or Number to search for
+argument:: printResults
+Boolean, if true (default) prints results to post window
+returns:: Dictionary of matching ratios
+
+method:: closestRatio
+Find the predefined ratio that most closely matches given dimensions.
+argument:: ratio
+Array [width, height]
+argument:: precision
+Decimal precision for comparison (default: 4)
+argument:: highPrecision
+Boolean, if true uses exact calculations (default: false)
+returns:: Association with the closest matching ratio
+
+method:: ratioObjectData
+Returns complete data for a ratio as an array.
+argument:: ratioObject
+Association from ratioObject or ratioDict.associationAt
+argument:: precision
+Decimal precision (default: 4)
+returns:: Array [key, ratio, description, decimal, cents]
+
+subsection:: Display Methods
+
+method:: sortRatios
+Sort ratios by their decimal value or other criteria.
+argument:: array
+Optional array of ratios to sort (default: all ratios)
+argument:: sortIndex
+Index to sort by (e.g. 0=key, 4=cents) (default: 3)
+argument:: precision
+Decimal precision (default: 4)
+returns:: Sorted array of ratio data
+
+method:: postRatioArr
+Prints a formatted ratio array to the post window.
+argument:: ratioArr
+Array in the format [key, ratio, description, decimal, cents]
+
+method:: listRatios
+Lists all or specified ratios with their values and descriptions.
+argument:: array
+Optional array of ratios to list (default: all ratios)
+
+method:: postRatio
+Posts details of a specific ratio by name.
+argument:: name
+Symbol or String name of the ratio
+returns:: Association or this
+
+subsection:: GUI / Screen Methods
+
+method:: gui
+Creates a new MITHRatiosView with this MITHScreenRatios instance.
+argument:: win
+Optional existing window to use (default: creates new window)
+returns:: MITHRatiosView
+
+method:: screenDims
+Get or set the current screen dimensions.
+returns:: Array [width, height]
+
+method:: maxDims
+Get or set the maximum allowed dimensions.
+argument:: arr
+Array [width, height] or Number
+returns:: Array [width, height]
+
+method:: viewDims
+Get or set the current view dimensions.
+argument:: arr
+Array [width, height] or Number
+returns:: Array [width, height] or this
+
+method:: ratioToDims
+Calculate dimensions based on a ratio, constrained to maximum dimensions.
+argument:: ratio
+Symbol, String, or Array [numerator, denominator]
+argument:: dims
+Optional constraint dimensions (default: maxDims)
+argument:: landscape
+Boolean, if true (default) width > height, if false height > width
+returns:: Array [width, height]
+
+method:: resizeWin
+Resize the window to specified dimensions.
+argument:: dims
+Array [width, height] (default: screenDims/10)
+
+examples::
+
+code::
+// Create a new instance
+m = MITHScreenRatios.new;
+
+// List all available ratios
+m.listRatios;
+
+// Search for ratios containing "third" in their description
+m.searchRatios("third");
+
+// Calculate dimensions for a 16:9 ratio with width 800
+m.ratioToDims(\r16_9, 800);  // [800, 450]
+
+// Find the closest standard ratio to arbitrary dimensions
+m.closestRatio([683, 384]);  // (r16_9 -> [[9, 16], minor 7th])
+
+// Create a window with phi (golden) ratio
+d = m.ratioToDims(\phi, 800) // [800, 494]
+m.viewDims_(d); // set default dims to [800, 494]
+v = m.gui; // view Window with dims dimensions
+
+// Convert a ratio to cents
+r = m.ratio(\r3_2) // [3, 2]
+m.ratioToCents(r);  // 702
+
+// Calculate difference between just and equal-tempered major third
+m.diffInCents(\r5_4, m.centsToRatio(400));  // 13.79
+
+// Add a custom ratio
+m.addRatio("myRatio", [11, 8], "undecimal neutral fourth");
+m.postRatio("myRatio");
+
+// Find all ratios in the dictionary that use specific numbers
+m.searchRatios(5);  // Finds ratios containing the number 5
+
+// Example: Search for specific ratios and replace dictionary
+(
+m = MITHScreenRatios.new;
+// Search for all semitone ratios
+~semitoneRatios = m.searchRatios("semitone", false);
+// Replace entire dictionary with just these results
+m.addRatioDict(~semitoneRatios, true);
+// Verify we now have only semitone ratios
+m.listRatios;
+)
+/*
+// returns
+\r25_24 : [25, 24] "just intonation major semitone" 0.96 | 71 cents
+\r18_17 : [18, 17] "equal temperament semitone" 0.9444 | 99 cents
+\r16_15 : [16, 15] "just intonation minor semitone" 0.9375 | 112 cents
+*/
+
+// Convert 700 cents to ratio
+m.centsToRatio(700); // [442, 295]
+
+// Example: Create golden ratio window
+(
+m = MITHScreenRatios.new;
+// Get phi (golden ratio) dimensions with 600px width
+d = m.ratioToDims(\phi, 600);
+m.viewDims_(d);
+// Create window and display dimensions
+w = m.gui;
+("Golden ratio window: % x %").format(d[0], d[1]).postln;
+)
+// flip aspect ration, defaults to ful screen height
+m.viewDims_(m.ratioToDims(\phi, landscape: false));
+
+// Example: Find musical ratios within a specific range
+(
+m = MITHScreenRatios.new;
+// Search for ratios between 600-700 cents (around a tritone)
+~tritoneRatios = Dictionary.new;
+m.ratiosDict.keysValuesDo({ |key, value|
+    ~cents = m.ratioToCents(value[0]);
+    if(~cents.inclusivelyBetween(580, 620)) {
+        ~tritoneRatios.put(key, value);
+    };
+});
+// Add these to dictionary
+m.addRatioDict(~tritoneRatios, true);
+m.listRatios;
+)
+::

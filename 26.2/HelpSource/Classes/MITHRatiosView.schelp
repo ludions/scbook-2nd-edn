@@ -1,0 +1,64 @@
+title:: MITHRatiosView
+summary:: A window visualization for MITHScreenRatios
+related:: Classes/MITHScreenRatios
+categories:: geometry, gui, scbook
+
+description::
+Creates a window with dimensions based on a MITHScreenRatios instance. The window displays a rectangle with the specified ratio and can be resized while maintaining the proper update notifications to the model.
+
+classmethods::
+
+method:: new
+Creates a new MITHRatiosView.
+argument:: model
+A MITHScreenRatios instance to use as the model
+argument:: win
+Optional existing window to use (default: creates a new window)
+returns:: MITHRatiosView instance (actually returns the window)
+
+instancemethods::
+
+private:: init, makeWindow
+
+method:: model
+Returns the associated MITHScreenRatios model.
+returns:: MITHScreenRatios
+
+method:: win
+Returns the window being used.
+returns:: Window
+
+method:: update
+Responds to changes in the model, particularly viewDims changes.
+argument:: obj
+The object that changed
+argument:: what
+The changed aspect (e.g., \viewDims)
+argument:: val
+The new value
+returns:: this
+
+examples::
+
+code::
+// Create a MITHScreenRatios instance
+m = MITHScreenRatios.new;
+
+// Create a view with default dimensions
+v = MITHRatiosView(m);
+
+// Change to golden ratio dimensions
+m.viewDims_(m.ratioToDims(\phi, 800));
+
+// Try some other ratios
+m.viewDims_(m.ratioToDims(\r3_2, 600));  // Perfect fifth
+m.viewDims_(m.ratioToDims(\r16_9, 800));  // HDTV
+
+// Create a view in an existing window
+w = Window("Custom Window", Rect(100, 100, 400, 300)).front;
+v = MITHRatiosView(m, w);
+
+// Alternative using the gui method
+m = MITHScreenRatios.new;
+v = m.gui;
+::
