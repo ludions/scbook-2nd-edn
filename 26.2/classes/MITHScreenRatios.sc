@@ -168,6 +168,7 @@ MITHScreenRatios {
 	// polymorphism
 	ratio { |input|
 		if(input.isString or: {input.isKindOf(Symbol)}) {
+
 			^this.getRatio(input);
 		} {
 			^this.reduceRatio(input);
@@ -229,6 +230,44 @@ MITHScreenRatios {
 			("Invalid ratio name or Array size").error;
 			^nil
 		}
+	}
+
+	// convert cents to ratio
+	centsToRatio { |cents, maxDenominator=100|
+		var frequencyRatio;
+
+		cents = cents.asFloat;
+
+		// Calculate frequency ratio from cents using the formula: ratio = 2^(cents/1200)
+		frequencyRatio = 2.pow(cents/1200);
+
+		// Use existing asRatio method to find the closest integer ratio
+		^this.asRatio(frequencyRatio, maxDenominator);
+	}
+
+	//difference in cents between two ratios
+	diffInCents { |arr1, arr2, precision=2|
+		var cents1, cents2, difference, decPrecision;
+		var ratio1, ratio2;
+
+		// use normalised arrays
+		arr1 = this.ratio(arr1);
+		arr2 = this.ratio(arr2);
+
+		// frequency ratios (larger/smaller)
+		ratio1 = arr1[0] / arr1[1];
+		ratio2 = arr2[0] / arr2[1];
+
+		// cents = 1200 * log2(ratio)
+		cents1 = 1200 * (ratio1.log / 2.log);
+		cents2 = 1200 * (ratio2.log / 2.log);
+
+		// absolute difference
+		difference = (cents1 - cents2).abs;
+
+		// precision
+		decPrecision = 1 / (10 ** precision);
+		^difference.round(decPrecision);
 	}
 
 	ratioDescr {|name|
@@ -434,6 +473,10 @@ MITHScreenRatios {
 
 	// **************** GUI / Screen Methods ****************
 
+	gui { |win|
+		^MITHRatiosView.new(this, win)
+	}
+
 	resetDims {
 		viewDims = screenDims;
 		this.changed(\viewDims, viewDims);
@@ -491,6 +534,7 @@ MITHScreenRatios {
 	}
 
 	resizeWin {|dims| // Array
+		dims = dims ?? {screenDims/10};
 		^this.viewDims_(dims)
 	}
 }
