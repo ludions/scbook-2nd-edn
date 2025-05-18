@@ -9,7 +9,7 @@ ViewCentralModel
 
 ViewCentral {
 	var <win, <marginView, <dims, <view, <winCol, <margins;
-	var <marginCol, <usrViewBool, <viewCol, <winName, model;
+	var <marginCol, <usrViewBool, <viewCol, <winName, <model;
 
 
 	*new { arg win, model;
@@ -18,15 +18,13 @@ ViewCentral {
 
 	init { arg aWin, aModel;
 
-		win = aWin;
-		model = aModel;
+		win = aWin ?? {Window.new.front};
+		model = aModel ?? {ViewCentralModel.new};
 		model.addDependant(this);
 
 		usrViewBool = model.usrViewBool;
 
 		dims = model.dims; // these remain a fixed size
-
-		if(win.isNil, { win = Window.new.front});
 
 		// for when view is remade
 		if(model.winPos.notNil){
@@ -109,6 +107,11 @@ ViewCentral {
 		^this
 	}
 
+	front {
+		model.front;
+    ^this
+	}
+
 	resizeWin {|x, y|
 		win.setInnerExtent(x, y);
 		^this
@@ -188,7 +191,6 @@ ViewCentral {
 		{what == \close} {
 			this.close
 		}
-
 		{what == \keyDownAction} {
 			this.registerKeyDownAction(val)
 		}
@@ -217,9 +219,9 @@ ViewCentralModel {
 	}
 
 	init { |aDims, aMargins, aUsrViewBool|
-		dims = aDims; // NB not view
+		dims = aDims ?? [620, 460]; // NB not view
 		winDims = dims;
-		margins = aMargins ?? (25!4);
+		margins = aMargins ?? (20!4);
 		margins = this.cleanMarginsFormat(margins);
 		marginSums = this.calcViewMargSums(margins);
 		viewDims = this.calcViewDims(margins);
