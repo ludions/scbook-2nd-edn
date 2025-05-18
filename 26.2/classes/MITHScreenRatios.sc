@@ -11,7 +11,7 @@ ludions.com
 */
 
 MITHScreenRatios {
-	var  <>screenDims, <viewDims, <ratiosDict, <maxDims;
+	var  <>screenDims, <viewDims, <ratiosDict, <maxDims, <win;
 
 	*ratiosDict {
 		^Dictionary.with(*[
@@ -473,8 +473,19 @@ MITHScreenRatios {
 
 	// **************** GUI / Screen Methods ****************
 
-	gui { |win|
-		^MITHRatiosView.new(this, win)
+	// creates a MITHRatiosView instance
+	// if window arg is nil, will make a new window
+	gui { |window|
+		win = MITHRatiosView.new(this, window);
+		^win
+	}
+
+	// closes the current MITHRatiosView instance Window if exists
+	close {
+		if(win.notNil){
+			win.close;
+		};
+		^this
 	}
 
 	resetDims {
