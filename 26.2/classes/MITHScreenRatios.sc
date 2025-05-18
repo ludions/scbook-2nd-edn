@@ -49,7 +49,7 @@ MITHScreenRatios {
 		screenDims = this.getScreenSize;
 		ratiosDict = MITHScreenRatios.ratiosDict;
 		maxDims =  screenDims; // default for initial view
-		viewDims = screenDims/10; // default for initial view
+		viewDims = (screenDims/10).round.asInteger; // default for initial view
 		^this
 	}
 
@@ -488,6 +488,7 @@ MITHScreenRatios {
 		^this
 	}
 
+	// private, maintain compatability
 	resetDims {
 		viewDims = screenDims;
 		this.changed(\viewDims, viewDims);
@@ -498,6 +499,7 @@ MITHScreenRatios {
 		^maxDims = this.checkDims(arr);
 	}
 
+	// private
 	checkDims {|arr|
 		if(arr.isKindOf(SimpleNumber)){
 			arr = arr.dup
@@ -544,6 +546,7 @@ MITHScreenRatios {
 		^screenDims.asInteger
 	}
 
+	// private, maintain compatability
 	resizeWin {|dims| // Array
 		dims = dims ?? {screenDims/10};
 		^this.viewDims_(dims)

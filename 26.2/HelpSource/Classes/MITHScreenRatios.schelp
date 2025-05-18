@@ -17,7 +17,7 @@ Returns a Dictionary of predefined ratios. The dictionary contains named ratios 
 
 instancemethods::
 
-private:: init, checkDims, getScreenSize, prProcessScaledRatio
+private:: init, checkDims, getScreenSize, prProcessScaledRatio, resetDims, resizeWin
 
 subsection:: Dictionary Management
 
@@ -53,12 +53,6 @@ returns:: Association
 
 subsection:: Ratio Operations
 
-method:: ratio
-Polymorphic method that either gets a named ratio from the dictionary or reduces an array to its simplest ratio form.
-argument:: input
-A Symbol, String, or Array [num, denom]
-returns:: Array [numerator, denominator]
-
 method:: getRatio
 Gets a ratio array from the dictionary by name.
 argument:: ratioName
@@ -70,6 +64,13 @@ Reduces a ratio to its simplest form. Can handle floating-point inputs.
 argument:: ratioArray
 Array [numerator, denominator]
 returns:: Array [numerator, denominator] in simplified form
+
+method:: ratio
+Convenience polymorphic method that either gets a named ratio from the dictionary (using method getRatio) or reduces an array to its simplest ratio form (using reduceRatio).
+argument:: input
+A Symbol, String, or Array [num, denom]
+returns:: Array [numerator, denominator]
+
 
 method:: ratioToDecimal
 Converts a ratio to its decimal representation.
@@ -177,9 +178,12 @@ subsection:: GUI / Screen Methods
 
 method:: gui
 Creates a new MITHRatiosView with this MITHScreenRatios instance.
-argument:: win
+argument:: window
 Optional existing window to use (default: creates new window)
 returns:: MITHRatiosView
+
+method:: win
+Returns the gui Window, if it exists
 
 method:: screenDims
 Get or set the current screen dimensions.
@@ -207,57 +211,60 @@ argument:: landscape
 Boolean, if true (default) width > height, if false height > width
 returns:: Array [width, height]
 
-method:: resizeWin
-Resize the window to specified dimensions.
-argument:: dims
-Array [width, height] (default: screenDims/10)
+method:: close
+Close gui Window if it exists
+
 
 examples::
 
 code::
-// Create a new instance
+// create a new instance
 m = MITHScreenRatios.new;
 
-// List all available ratios
+// list all available ratios
 m.listRatios;
 
-// Search for ratios containing "third" in their description
+// search for ratios containing "third" in their description
 m.searchRatios("third");
 
-// Calculate dimensions for a 16:9 ratio with width 800
+// calculate dimensions for a 16:9 ratio with width 800
 m.ratioToDims(\r16_9, 800);  // [800, 450]
 
-// Find the closest standard ratio to arbitrary dimensions
+// find the closest standard ratio to arbitrary dimensions
 m.closestRatio([683, 384]);  // (r16_9 -> [[9, 16], minor 7th])
 
-// Create a window with phi (golden) ratio
+// create a window with phi (golden) ratio
 d = m.ratioToDims(\phi, 800) // [800, 494]
 m.viewDims_(d); // set default dims to [800, 494]
 m.viewDims // [800, 494]
-m.gui; // view Window with dims dimensions
+m.gui; // create a view Window with viewDims dimensions
 
-// Convert a ratio to cents
+m.viewDims_([640, 480]) // gui Window updates its size
+m.viewDims // [640, 480]
+m.close // close window
+
+// convert a ratio to cents
 r = m.ratio(\r3_2) // [3, 2]
 m.ratioToCents(r);  // 702
 
-// Calculate difference between just and equal-tempered major third
+//  calculate difference between just and equal-tempered major third
 m.diffInCents(\r5_4, m.centsToRatio(400));  // 13.79
 
-// Add a custom ratio
+// add a custom ratio
 m.addRatio("myRatio", [11, 8], "undecimal neutral fourth");
 m.postRatio("myRatio");
 
-// Find all ratios in the dictionary that use specific numbers
+// find all ratios in the dictionary that use specific numbers
 m.searchRatios(5);  // Finds ratios containing the number 5
 
-// Example: Search for specific ratios and replace dictionary
+// example: search for specific ratios and replace dictionary
 (
 m = MITHScreenRatios.new;
-// Search for all semitone ratios
+// search for all semitone ratios
 ~semitoneRatios = m.searchRatios("semitone", false);
-// Replace entire dictionary with just these results
+// replace entire dictionary with just these results
 m.addRatioDict(~semitoneRatios, true);
-// Verify we now have only semitone ratios
+// verify only semitone ratios are in Dictionary
 m.listRatios;
 )
 /*
@@ -270,25 +277,25 @@ m.listRatios;
 // Convert 700 cents to ratio
 m.centsToRatio(700); // [442, 295]
 
-// Example: Create golden ratio window
+// example: create golden ratio window
 (
 m = MITHScreenRatios.new;
-// Get phi (golden ratio) dimensions with 600px width
+// get phi (golden ratio) dimensions with 600px width
 d = m.ratioToDims(\phi, 600);
 m.viewDims_(d);
-// Create window and display dimensions
+// create window and display dimensions
 m.gui;
 ("Golden ratio window: % x %").format(d[0], d[1]).postln;
 )
-// flip aspect ration, defaults to ful screen height
+// flip aspect ration, defaults to full screen height
 m.viewDims_(m.ratioToDims(\phi, landscape: false));
 
 
 
-// Example: Find musical ratios within a specific range
+// EExample: Find musical ratios within a specific range
 (
 m = MITHScreenRatios.new;
-// Search for ratios between 600-700 cents (around a tritone)
+// search for ratios between 600-700 cents (around a tritone)
 ~tritoneRatios = Dictionary.new;
 m.ratiosDict.keysValuesDo({ |key, value|
     ~cents = m.ratioToCents(value[0]);
@@ -296,7 +303,7 @@ m.ratiosDict.keysValuesDo({ |key, value|
         ~tritoneRatios.put(key, value);
     };
 });
-// Add these to dictionary
+// add to dictionary
 m.addRatioDict(~tritoneRatios, true);
 m.listRatios;
 )
