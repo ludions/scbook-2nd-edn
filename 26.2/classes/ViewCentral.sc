@@ -3,9 +3,207 @@
 ViewCentral
 ViewCentralModel
 
-© 2022 Tom Hall
+© 2022-2025 Tom Hall
 
 */
+
+ViewCentral {
+	var <win, <marginView, <dims, <view, <winCol, <margins;
+	var <marginCol, <usrViewBool, <viewCol, <winName, model;
+
+
+	*new { arg win, model;
+		^super.new.init(win, model)
+	}
+
+	init { arg aWin, aModel;
+
+		win = aWin;
+		model = aModel;
+		model.addDependant(this);
+
+		usrViewBool = model.usrViewBool;
+
+		dims = model.dims; // these remain a fixed size
+
+		if(win.isNil, { win = Window.new.front});
+
+		// for when view is remade
+		if(model.winPos.notNil){
+			var pos = model.winPos;
+			this.moveWin(pos[0], pos[1])
+		};
+
+		this.registerWinAction(win);
+
+		this.registerKeyDownAction(model.escKey);
+
+		win.onClose_({
+			win.endFrontAction = {};
+			model.removeDependant(this);
+		});
+
+		// becomes a margin to the view
+		marginView= View.new(win).fixedSize_(Size(dims[0], dims[1]));
+
+		// default for using Pen in the view
+		view = if(usrViewBool, {
+			UserView.new(marginView, marginView.bounds)
+		},{
+			View.new(marginView, marginView.bounds)
+		});
+
+		this.makeLayout;
+
+		this.marginCol_(model.marginCol);
+		this.viewCol_(model.viewCol);
+		this.winCol_(model.winCol);
+
+		// kludge, win won't resize immediately,
+		// maybe problem with layouts?
+		r{
+			0.0001.wait;
+			this.resizeWin(*model.winDims);
+		}.play(AppClock);
+
+		^this
+	}
+
+	registerKeyDownAction {|escKey|
+		win.view.keyDownAction_({
+			arg view, char, modifiers, unicode, keycode, key;
+			if(keycode==escKey, {win.endFullScreen});
+		});
+		^this
+	}
+
+
+	registerWinAction {|win|
+		var yPos, screenHeight, winBorder = 28, winBounds;
+		screenHeight = this.getScreenHeight;
+		win.endFrontAction = {
+			if(win.isClosed.not){
+				winBounds = win.bounds;
+				yPos = screenHeight - winBounds.top - winBounds.height - winBorder;
+				model.winPos = [winBounds.left, yPos]; // CONTROLER TO MODEL
+				// ["model winPos changed", winBounds.left, yPos].postln; // testing
+			}
+		}
+		^this
+	}
+
+	getScreenHeight {
+		^Window.availableBounds.height;
+	}
+
+	makeLayout {
+		win.layout = VLayout([
+			marginView.layout_(
+				HLayout(view)
+			),
+			align: \center
+		]);
+
+		this.margins_(model.margins);
+		win.layout.margins_(0); // window margins
+		^this
+	}
+
+	resizeWin {|x, y|
+		win.setInnerExtent(x, y);
+		^this
+	}
+
+	moveWin {|x, y|
+		var bounds, rect;
+		bounds = win.bounds;
+		rect = Rect(x, y, bounds.width, bounds.height);
+		win.setTopLeftBounds(rect, menuSpacer: 45);
+		^this
+	}
+
+	marginCol_ {|color|
+		marginCol = color;
+		marginView.background_(marginCol);
+		^this
+	}
+
+	viewCol_ {|color|
+		viewCol = color;
+		view.background_(viewCol);
+		^this
+	}
+
+	winCol_ {|color|
+		winCol =  color;
+		win.background_(winCol);
+		^this
+	}
+
+	winName_{|name|
+		winName = name;
+		win.name(winName);
+		^this
+	}
+
+	margins_ { |argMargins|
+		margins = argMargins;
+		marginView.layout.margins = margins; // LTRB
+		^this
+	}
+
+	// remove all views from the window
+	remove {
+		if(win.isClosed.not, {
+			view.remove;
+			marginView.remove;
+		});
+		^this;
+	}
+
+	close { win.close; ^this }
+
+	update {|obj, what, val|
+		case{what == \margins} {
+			this.margins_(val) // LTRB
+		}
+		{what == \winDims} {
+			this.resizeWin(*val)
+		}
+		{what == \winPos} {
+			this.moveWin(*val)
+		}
+		{what == \winCol} {
+			this.winCol_(val)
+		}
+		{what == \viewCol} {
+			this.viewCol_(val)
+		}
+		{what == \marginCol} {
+			this.marginCol_(val)
+		}
+		{what == \winName} {
+			this.winName_(val)
+		}
+		{what == \close} {
+			this.close
+		}
+
+		{what == \keyDownAction} {
+			this.registerKeyDownAction(val)
+		}
+		{what == \fullScreen} {
+			win.fullScreen
+		}
+		{what == \front} {
+			win.front
+		}
+		{what == \endFullScreen} {
+			win.endFullScreen
+		};
+		^this
+	}
+}
 
 
 ViewCentralModel {
@@ -35,7 +233,7 @@ ViewCentralModel {
 		^this
 	}
 
-	escKey_ {|int|
+	escKey_ {|int = 53|
 		escKey = int;
 		this.changed(\keyDownAction, escKey);
 		^this
@@ -61,6 +259,7 @@ ViewCentralModel {
 	winName_{|string|
 		winName = string;
 		this.changed(\winName, string);
+		^this
 	}
 
 	shrinkWin {
@@ -80,14 +279,17 @@ ViewCentralModel {
 
 	endFullScreen {
 		this.changed(\endFullScreen);
+		^this
 	}
 
 	fullScreen {
 		this.changed(\fullScreen);
+		^this
 	}
 
 	front {
-		this.changed(\front)
+		this.changed(\front);
+		^this
 	}
 
 	close {
@@ -138,198 +340,4 @@ ViewCentralModel {
 	}
 }
 
-ViewCentral {
-	var <win, <marginView, <dims, <view, <winCol, <margins;
-	var <marginCol, <usrViewBool, <viewCol, <winName, model;
-
-
-	*new { arg win, model;
-		^super.new.init(win, model)
-	}
-
-	init { arg aWin, aModel;
-
-		win = aWin;
-		model = aModel;
-		model.addDependant(this);
-
-		usrViewBool = model.usrViewBool;
-
-		dims = model.dims; // these remain a fixed size
-
-		if(win.isNil, { win = Window.new.front});
-
-		// for when view is remade
-		if(model.winPos.notNil){
-			var pos = model.winPos;
-			this.moveWin(pos[0], pos[1])
-		};
-
-		this.regsiterWinAction(win);
-
-		this.registerKeyDownAction(model.escKey);
-
-		win.onClose_({
-			win.endFrontAction = {};
-			model.removeDependant(this);
-		});
-
-		// becomes a margin to the view
-		marginView= View.new(win).fixedSize_(Size(dims[0], dims[1]));
-
-		// default for using Pen in the view
-		view = if(usrViewBool, {
-			UserView.new(marginView, marginView.bounds)
-		},{
-			View.new(marginView, marginView.bounds)
-		});
-
-		this.makeLayout;
-
-		this.marginCol_(model.marginCol);
-		this.viewCol_(model.viewCol);
-		this.winCol_(model.winCol);
-
-		// kludge, win won't resize immediately,
-		// maybe problem with layouts?
-		r{
-			0.0001.wait;
-			this.resizeWin(*model.winDims);
-		}.play(AppClock);
-
-		^this
-	}
-
-	registerKeyDownAction {|escKey|
-		win.view.keyDownAction_({
-			arg view, char, modifiers, unicode, keycode, key;
-			if(keycode==escKey, {win.endFullScreen});
-		});
-		^this
-	}
-
-
-	regsiterWinAction {|win|
-		var yPos, screenHeight, winBorder = 28, winBounds;
-		screenHeight = this.getScreenHeight;
-		win.endFrontAction = {
-			if(win.isClosed.not){
-				winBounds = win.bounds;
-				yPos = screenHeight - winBounds.top - winBounds.height - winBorder;
-				model.winPos = [winBounds.left, yPos]; // CONTROLER TO MODEL
-				// ["model winPos changed", winBounds.left, yPos].postln; // testing
-			}
-		}
-	}
-
-	getScreenHeight {
-		^Window.availableBounds.height;
-	}
-
-	makeLayout {
-		win.layout = VLayout([
-			marginView.layout_(
-				HLayout(view)
-			),
-			align: \center
-		]);
-
-		this.margins_(model.margins);
-		win.layout.margins_(0); // window margins
-		^this
-	}
-
-	resizeWin {|x, y|
-		win.setInnerExtent(x, y);
-		^this
-	}
-
-	moveWin {|x, y|
-		var bounds, rect;
-		bounds = win.bounds;
-		rect = Rect(x, y, bounds.width, bounds.height);
-		win.setTopLeftBounds(rect, menuSpacer: 45);
-		^this
-	}
-
-	marginCol_ {|aCol|
-		marginCol = aCol;
-		marginView.background_(marginCol);
-		^this
-	}
-
-	viewCol_ {|aCol|
-		viewCol = aCol;
-		view.background_(viewCol);
-		^this
-	}
-
-	winCol_ {|aCol|
-		winCol =  aCol;
-		win.background_(winCol);
-		^this
-	}
-
-	winName_{|aName|
-		winName = aName;
-		win.name(winName);
-	}
-
-	margins_ { |argMargins|
-		margins = argMargins;
-		marginView.layout.margins = margins; // LTRB
-		^this
-	}
-
-	// remove all views from the window
-	remove {
-		if(win.isClosed.not, {
-			view.remove;
-			marginView.remove;
-		});
-		^this;
-	}
-
-	close { win.close; ^this }
-
-	update {|obj, what, val|
-		case{what == \margins} {
-			this.margins_(val) // LTRB
-		}
-		{what == \winDims} {
-			this.resizeWin(*val)
-		}
-		{what == \winPos} {
-			this.moveWin(*val)
-		}
-		{what == \winCol} {
-			this.winCol_(val)
-		}
-		{what == \viewCol} {
-			this.viewCol_(val)
-		}
-		{what == \marginCol} {
-			this.marginCol_(val)
-		}
-		{what == \winName} {
-			this.winName_(val)
-		}
-		{what == \close} {
-			this.close
-		}
-		{what == \keyDownAction} {
-			this.registerKeyDownAction(val)
-		}
-		{what == \fullScreen} {
-			win.fullScreen
-		}
-		{what == \front} {
-			win.front
-		}
-		{what == \endFullScreen} {
-			win.endFullScreen
-		};
-		^this
-	}
-}
 
