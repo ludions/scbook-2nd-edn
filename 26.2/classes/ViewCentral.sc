@@ -7,6 +7,146 @@ ViewCentralModel
 
 */
 
+ViewCentralModel {
+
+	var <dims, <margins, <>winDims, <usrViewBool, <viewDims;
+	var <winCol, <viewCol, <marginCol, <marginSums, <>winPos;
+	var <screenHeight, <winName = "", <escKey;
+
+	*new { arg dims, margins, usrViewBool;
+		^super.new.init(dims, margins, usrViewBool);
+	}
+
+	init { |aDims, aMargins, aUsrViewBool|
+		dims = aDims ?? [620, 460]; // NB not view
+		winDims = dims;
+		margins = aMargins ?? (20!4);
+		margins = this.cleanMarginsFormat(margins);
+		marginSums = this.calcViewMargSums(margins);
+		viewDims = this.calcViewDims(margins);
+		escKey = 53; // MBP
+		usrViewBool = aUsrViewBool ?? true;
+
+		winCol = Color.grey(0.75);
+		marginCol = Color.grey(0.9);
+		viewCol = Color.white;
+
+		^this
+	}
+
+	escKey_ { |int = 53|
+		escKey = int;
+		this.changed(\keyDownAction, escKey);
+		^this
+	}
+
+	restoreCols {
+		this.winCol_(Color.grey(0.75));
+		this.marginCol_(Color.grey(0.9));
+		this.viewCol_(Color.white);
+		^this;
+	}
+
+	removeViews {
+		this.changed(\removeViews);
+		^this
+	}
+
+	calcViewDims { |argMargins|
+		^(dims - this.calcViewMargSums(argMargins))
+	}
+
+	calcViewMargSums { |argMargins|
+		^[[argMargins[0], argMargins[2]].sum,
+			[argMargins[1], argMargins[3]].sum
+		]
+	}
+
+	winName_{ |string|
+		winName = string;
+		this.changed(\winName, string);
+		^this
+	}
+
+	shrinkWin {
+		this.resizeWin(*dims);
+		^this;
+	}
+
+	resizeWin { |x, y|
+		winDims = [x, y];
+		this.changed(\winDims, [x, y]);
+	}
+
+	moveWin { |x=0, y=0|
+		winPos = [x, y];
+		this.changed(\winPos, [x, y]);
+	}
+
+	endFullScreen {
+		this.changed(\endFullScreen);
+		^this
+	}
+
+	fullScreen {
+		this.changed(\fullScreen);
+		^this
+	}
+
+	front {
+		this.changed(\front);
+		^this
+	}
+
+	close {
+		this.changed(\close);
+		^this
+	}
+
+	winCol_ { |color|
+		winCol = color;
+		this.changed(\winCol, winCol);
+		^this
+	}
+
+	viewCol_ { |color|
+		viewCol = color;
+		this.changed(\viewCol, viewCol);
+		^this
+	}
+
+	marginCol_ { |color|
+		marginCol = color;
+		this.changed(\marginCol, marginCol);
+		^this
+	}
+
+	margins_ { |argMargins|
+		margins = this.cleanMarginsFormat(argMargins); // LTRB
+		this.changed(\margins, margins);
+
+		// mostly used in subclasses
+		marginSums = this.calcViewMargSums(margins);
+		this.changed(\marginSums, marginSums);
+		viewDims = this.calcViewDims(margins);
+		this.changed(\viewDims, viewDims);
+
+		^this
+	}
+
+	cleanMarginsFormat { |argMargins |
+		var newMargins;
+		newMargins = case {argMargins.isNil} {25 ! 4}
+		{argMargins.isKindOf(SimpleNumber)} {argMargins ! 4}
+		{argMargins.size == 2} {
+			[argMargins[0], argMargins[1], argMargins[0], argMargins[1]];
+		}
+		{argMargins.size == 4} { argMargins };
+		^newMargins.max(0);
+	}
+}
+
+
 ViewCentral {
 	var <win, <view, <model, <marginView;
 	var dims, winCol, margins, marginCol;
@@ -233,145 +373,4 @@ ViewCentral {
 		^this
 	}
 }
-
-
-ViewCentralModel {
-
-	var <dims, <margins, <>winDims, <usrViewBool, <viewDims;
-	var <winCol, <viewCol, <marginCol, <marginSums, <>winPos;
-	var <screenHeight, <winName = "", <escKey;
-
-	*new { arg dims, margins, usrViewBool;
-		^super.new.init(dims, margins, usrViewBool);
-	}
-
-	init { |aDims, aMargins, aUsrViewBool|
-		dims = aDims ?? [620, 460]; // NB not view
-		winDims = dims;
-		margins = aMargins ?? (20!4);
-		margins = this.cleanMarginsFormat(margins);
-		marginSums = this.calcViewMargSums(margins);
-		viewDims = this.calcViewDims(margins);
-		escKey = 53; // MBP
-		usrViewBool = aUsrViewBool ?? true;
-
-		winCol = Color.grey(0.75);
-		marginCol = Color.grey(0.9);
-		viewCol = Color.white;
-
-		^this
-	}
-
-	escKey_ { |int = 53|
-		escKey = int;
-		this.changed(\keyDownAction, escKey);
-		^this
-	}
-
-	restoreCols {
-		this.winCol_(Color.grey(0.75));
-		this.marginCol_(Color.grey(0.9));
-		this.viewCol_(Color.white);
-		^this;
-	}
-
-	removeViews {
-		this.changed(\removeViews);
-		^this
-	}
-
-	calcViewDims { |argMargins|
-		^(dims - this.calcViewMargSums(argMargins))
-	}
-
-	calcViewMargSums { |argMargins|
-		^[[argMargins[0], argMargins[2]].sum,
-			[argMargins[1], argMargins[3]].sum
-		]
-	}
-
-	winName_{ |string|
-		winName = string;
-		this.changed(\winName, string);
-		^this
-	}
-
-	shrinkWin {
-		this.resizeWin(*dims);
-		^this;
-	}
-
-	resizeWin { |x, y|
-		winDims = [x, y];
-		this.changed(\winDims, [x, y]);
-	}
-
-	moveWin { |x=0, y=0|
-		winPos = [x, y];
-		this.changed(\winPos, [x, y]);
-	}
-
-	endFullScreen {
-		this.changed(\endFullScreen);
-		^this
-	}
-
-	fullScreen {
-		this.changed(\fullScreen);
-		^this
-	}
-
-	front {
-		this.changed(\front);
-		^this
-	}
-
-	close {
-		this.changed(\close);
-		^this
-	}
-
-	winCol_ { |color|
-		winCol = color;
-		this.changed(\winCol, winCol);
-		^this
-	}
-
-	viewCol_ { |color|
-		viewCol = color;
-		this.changed(\viewCol, viewCol);
-		^this
-	}
-
-	marginCol_ { |color|
-		marginCol = color;
-		this.changed(\marginCol, marginCol);
-		^this
-	}
-
-	margins_ { |argMargins|
-		margins = this.cleanMarginsFormat(argMargins); // LTRB
-		this.changed(\margins, margins);
-
-		// mostly used in subclasses
-		marginSums = this.calcViewMargSums(margins);
-		this.changed(\marginSums, marginSums);
-		viewDims = this.calcViewDims(margins);
-		this.changed(\viewDims, viewDims);
-
-		^this
-	}
-
-	cleanMarginsFormat { |argMargins |
-		var newMargins;
-		newMargins = case {argMargins.isNil} {25 ! 4}
-		{argMargins.isKindOf(SimpleNumber)} {argMargins ! 4}
-		{argMargins.size == 2} {
-			[argMargins[0], argMargins[1], argMargins[0], argMargins[1]];
-		}
-		{argMargins.size == 4} { argMargins };
-		^newMargins.max(0);
-	}
-}
-
 
