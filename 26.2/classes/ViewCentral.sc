@@ -8,9 +8,9 @@ ViewCentralModel
 */
 
 ViewCentral {
-	var <win, <marginView, <dims, <view, <winCol, <margins;
-	var <marginCol, <usrViewBool, <viewCol, <winName, <model;
-
+	var <win, <view, <model, <marginView;
+	var dims, winCol, margins, marginCol;
+	var usrViewBool, viewCol, winName;
 
 	*new { arg win, model;
 		^super.new.init(win, model)
@@ -19,7 +19,7 @@ ViewCentral {
 	init { arg aWin, aModel;
 
 		win = aWin ?? {Window.new.front};
-		model = aModel ?? {ViewCentralModel.new};
+		model = aModel;
 		model.addDependant(this);
 
 		usrViewBool = model.usrViewBool;
@@ -29,7 +29,7 @@ ViewCentral {
 		// for when view is remade
 		if(model.winPos.notNil){
 			var pos = model.winPos;
-			this.moveWin(pos[0], pos[1])
+			this.applyWinPos(pos[0], pos[1])
 		};
 
 		this.registerWinAction(win);
@@ -53,15 +53,15 @@ ViewCentral {
 
 		this.makeLayout;
 
-		this.marginCol_(model.marginCol);
-		this.viewCol_(model.viewCol);
-		this.winCol_(model.winCol);
+		this.applyMarginCol_(model.marginCol);
+		this.applyViewCol_(model.viewCol);
+		this.applyWinCol_(model.winCol);
 
 		// kludge, win won't resize immediately,
 		// maybe problem with layouts?
 		r{
 			0.0001.wait;
-			this.resizeWin(*model.winDims);
+			this.applyWinSize(*model.winDims);
 		}.play(AppClock);
 
 		^this
@@ -102,22 +102,19 @@ ViewCentral {
 			align: \center
 		]);
 
-		this.margins_(model.margins);
+		this.applyMargins_(model.margins);
 		win.layout.margins_(0); // window margins
 		^this
 	}
 
-	front {
-		model.front;
-    ^this
-	}
-
-	resizeWin {|x, y|
+	// for use via model
+	applyWinSize {|x, y|
 		win.setInnerExtent(x, y);
 		^this
 	}
 
-	moveWin {|x, y|
+	// for use via model
+	applyWinPos {|x, y|
 		var bounds, rect;
 		bounds = win.bounds;
 		rect = Rect(x, y, bounds.width, bounds.height);
@@ -125,38 +122,45 @@ ViewCentral {
 		^this
 	}
 
-	marginCol_ {|color|
+	// for use via model
+	applyMarginCol_ {|color|
 		marginCol = color;
 		marginView.background_(marginCol);
 		^this
 	}
 
-	viewCol_ {|color|
+	// for use via model
+	applyViewCol_ {|color|
 		viewCol = color;
 		view.background_(viewCol);
 		^this
 	}
 
-	winCol_ {|color|
+	// for use via model
+	applyWinCol_ {|color|
 		winCol =  color;
 		win.background_(winCol);
 		^this
 	}
 
-	winName_{|name|
+	// for use via model
+	applyWinName_{|name|
 		winName = name;
 		win.name(winName);
 		^this
 	}
 
-	margins_ { |argMargins|
+	// for use via model
+	applyMargins_ { |argMargins|
 		margins = argMargins;
 		marginView.layout.margins = margins; // LTRB
 		^this
 	}
 
+
+	// for use via model
 	// remove all views from the window
-	remove {
+	applyRemove {
 		if(win.isClosed.not, {
 			view.remove;
 			marginView.remove;
@@ -164,45 +168,70 @@ ViewCentral {
 		^this;
 	}
 
-	close { win.close; ^this }
+	// for use via model
+	applyFullScreen {
+		win.fullScreen;
+		^this
+	}
+
+	// for use via model
+	applyFront {
+		win.front;
+		^this
+	}
+
+	// for use via model
+	applyEndFullScreen {
+		win.endFullScreen;
+		^this
+	}
+
+	// for use via model
+	applyClose {
+		win.close;
+		^this
+	}
 
 	update {|obj, what, val|
 		case{what == \margins} {
-			this.margins_(val) // LTRB
+			this.applyMargins_(val) // LTRB
 		}
 		{what == \winDims} {
-			this.resizeWin(*val)
+			this.applyWinSize(*val)
 		}
 		{what == \winPos} {
-			this.moveWin(*val)
+			this.applyWinPos(*val)
 		}
 		{what == \winCol} {
-			this.winCol_(val)
+			this.applyWinCol_(val)
 		}
 		{what == \viewCol} {
-			this.viewCol_(val)
+			this.applyViewCol_(val)
 		}
 		{what == \marginCol} {
-			this.marginCol_(val)
+			this.applyMarginCol_(val)
 		}
 		{what == \winName} {
-			this.winName_(val)
+			this.applyWinName_(val)
 		}
 		{what == \close} {
-			this.close
+			this.applyClose
 		}
 		{what == \keyDownAction} {
 			this.registerKeyDownAction(val)
 		}
+		{what == \removeViews} {
+			this.applyRemove
+		}
 		{what == \fullScreen} {
-			win.fullScreen
+			this.applyFullScreen
 		}
 		{what == \front} {
-			win.front
+			this.applyFront
 		}
 		{what == \endFullScreen} {
-			win.endFullScreen
-		};
+			this.applyEndFullScreen
+		}
 		^this
 	}
 }
@@ -246,6 +275,11 @@ ViewCentralModel {
 		this.marginCol_(Color.grey(0.9));
 		this.viewCol_(Color.white);
 		^this;
+	}
+
+	removeViews {
+		this.changed(\removeViews);
+		^this
 	}
 
 	calcViewDims {  |argMargins|
