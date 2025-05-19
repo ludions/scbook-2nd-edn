@@ -67,7 +67,7 @@ ViewCentral {
 		^this
 	}
 
-	registerKeyDownAction {|escKey|
+	registerKeyDownAction { |escKey|
 		win.view.keyDownAction_({
 			arg view, char, modifiers, unicode, keycode, key;
 			if(keycode==escKey, {win.endFullScreen});
@@ -75,8 +75,7 @@ ViewCentral {
 		^this
 	}
 
-
-	registerWinAction {|win|
+	registerWinAction { |win|
 		var yPos, screenHeight, winBorder = 28, winBounds;
 		screenHeight = this.getScreenHeight;
 		win.endFrontAction = {
@@ -108,13 +107,13 @@ ViewCentral {
 	}
 
 	// for use via model
-	applyWinSize {|x, y|
+	applyWinSize { |x, y|
 		win.setInnerExtent(x, y);
 		^this
 	}
 
 	// for use via model
-	applyWinPos {|x, y|
+	applyWinPos { |x, y|
 		var bounds, rect;
 		bounds = win.bounds;
 		rect = Rect(x, y, bounds.width, bounds.height);
@@ -123,30 +122,30 @@ ViewCentral {
 	}
 
 	// for use via model
-	applyMarginCol_ {|color|
+	applyMarginCol_ { |color|
 		marginCol = color;
 		marginView.background_(marginCol);
 		^this
 	}
 
 	// for use via model
-	applyViewCol_ {|color|
+	applyViewCol_ { |color|
 		viewCol = color;
 		view.background_(viewCol);
 		^this
 	}
 
 	// for use via model
-	applyWinCol_ {|color|
+	applyWinCol_ { |color|
 		winCol =  color;
 		win.background_(winCol);
 		^this
 	}
 
 	// for use via model
-	applyWinName_{|name|
+	applyWinName_{ |name|
 		winName = name;
-		win.name(winName);
+		win.name_(winName);
 		^this
 	}
 
@@ -156,7 +155,6 @@ ViewCentral {
 		marginView.layout.margins = margins; // LTRB
 		^this
 	}
-
 
 	// for use via model
 	// remove all views from the window
@@ -264,7 +262,7 @@ ViewCentralModel {
 		^this
 	}
 
-	escKey_ {|int = 53|
+	escKey_ { |int = 53|
 		escKey = int;
 		this.changed(\keyDownAction, escKey);
 		^this
@@ -282,7 +280,7 @@ ViewCentralModel {
 		^this
 	}
 
-	calcViewDims {  |argMargins|
+	calcViewDims { |argMargins|
 		^(dims - this.calcViewMargSums(argMargins))
 	}
 
@@ -292,7 +290,7 @@ ViewCentralModel {
 		]
 	}
 
-	winName_{|string|
+	winName_{ |string|
 		winName = string;
 		this.changed(\winName, string);
 		^this
@@ -303,12 +301,12 @@ ViewCentralModel {
 		^this;
 	}
 
-	resizeWin {|x, y|
+	resizeWin { |x, y|
 		winDims = [x, y];
 		this.changed(\winDims, [x, y]);
 	}
 
-	moveWin {|x=0, y=0|
+	moveWin { |x=0, y=0|
 		winPos = [x, y];
 		this.changed(\winPos, [x, y]);
 	}
@@ -333,19 +331,19 @@ ViewCentralModel {
 		^this
 	}
 
-	winCol_ {|color|
+	winCol_ { |color|
 		winCol = color;
 		this.changed(\winCol, winCol);
 		^this
 	}
 
-	viewCol_ {|color|
+	viewCol_ { |color|
 		viewCol = color;
 		this.changed(\viewCol, viewCol);
 		^this
 	}
 
-	marginCol_ {|color|
+	marginCol_ { |color|
 		marginCol = color;
 		this.changed(\marginCol, marginCol);
 		^this
