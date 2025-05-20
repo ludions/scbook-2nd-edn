@@ -1,82 +1,72 @@
-TITLE:: SMuFLtools
+
+title:: SMuFLtools
 summary:: a convenience class for searching SMuFL fonts
 categories:: Notation
 related:: Classes/MITHNoteViewer, Classes/MITHUnicode
 
-DESCRIPTION::
+description:
 Part of a project for displaying Common Western Music Notation in SuperCollider using SMuFL ('Standard Music Font Layout') fonts, https://w3c.github.io/smufl/latest/. The class enables searching for a SMuFL glyph by name, and returns its description and Unicode codepoint. If the GUI is created, the glyph will also be displayed.
 
 note:: This class has the dependencies link::Classes/MITHUnicode::  and a SMuFL font, e.g. Bravura (default) https://github.com/steinbergmedia/bravura/, which includes metadata JSON files, see filePath argument below.
 ::
 
 
-CLASSMETHODS::
+classmethods:
 
-METHOD:: new
+method:: new
 Creates a SMuFLtools instance.
 
-ARGUMENT:: filePath
+argument:: filePath
 Path to the SMuFL JSON data. If Nil, demo data is used if present at ../data/SMuFL-tools-demo-data.json
 
-ARGUMENT:: verbose
-a Boolean, posts further information to the Post Window for some class instance methods.
+argument:: verbose
+Boolean, posts further information to the Post Window for some class instance methods.
 
-ARGUMENT:: fontName
+argument:: fontName
 A SMuFL font name String
 
-DISCUSSION::
+discussion::
 code::
 f = SMuFLtools.new
 ::
 
 
-INSTANCEMETHODS::
+instancemethods::
 
-	private:: setGlyphName
+private:: setGlyphName
+private:: reset
+private:: glyphInfo
+private:: pathErrorMsg
+private:: createDictionary
+private:: checkJSON
+private:: searchStr
 
-	private:: reset
+method:: filePath
+Returns the path of the loaded JSON data file
 
-	private:: glyphInfo
+method:: verbose
+Get or set verbose mode after class has been instantiated
 
-	private:: pathErrorMsg
-
-	private:: createDictionary
-
-	private:: checkJSON
-
-	private:: searchStr
-
-
-METHOD:: filePath
-
-returns:: the path of the loaded JSON data file
-
-
-METHOD:: verbose
-get or set verbose mode after class has been instantiated
-
-
-METHOD:: dictGlyphClasses
-
-returns:: A Dictionary of all glyphs from the JSON file
+method:: dictGlyphClasses
+Returns A Dictionary of all glyphs from the JSON file
 
 
 subsection:: GUI
 
-METHOD:: pathFinder
-conveniance method, opens a GUI picker to select a JSON data file
+method:: pathFinder
+Conveniance method, opens a GUI picker to select a JSON data file
 
-METHOD:: gui
+method:: gui
 Makes a GUI Window to navigate SMuFL glyphs.
 
-ARGUMENT:: scale
+argument:: scale
 A Float representing the scaling factor for the GUI window. Default is 1.0, allows larger values.
 
-ARGUMENT:: usePtSize
+argument:: usePtSize
 A Boolean that determines whether font sizes are interpreted as points (true) or pixels (false). Default is false. See discussion in link::Classes/Font::.
 
-DISCUSSION::
-This method creates an instance of link::Classes/SMuFLtoolsGUI::. N.B. It is not necessary to use this class directly other than via this method.
+discussion::
+Creates an instance of link::Classes/SMuFLtoolsGUI::. N.B. It is not necessary to use this class directly other than via this method.
 code::
 f = SMuFLtools.new;
 // a larger window
@@ -84,26 +74,21 @@ f.gui(2);
 ::
 
 
-
-
 subsection:: Selecting a glyph
 
-METHOD:: selectGlyph
+method:: selectGlyph
 Selects a glyph and calls postGlyphInfo
-
-ARGUMENT:: name
-the name of the selected glyph, as either a String or Symbol
-
-DISCUSSION::
+argument:: name
+The name of the selected glyph, as either a String or Symbol
+discussion:::
 code::
 f = SMuFLtools.new;
 f.selectGlyph(\accidentalSharp)
 ::
 
-METHOD:: postGlyphInfo
+method:: postGlyphInfo
 Posts the name and Unicode codepoint of a selected glyph as an Association.
-
-DISCUSSION::
+discussion:::
 code::
 f = SMuFLtools.new;
 f.selectGlyph(\gClef);
@@ -111,55 +96,45 @@ f.postGlyphInfo // ("gClef" -> "U+E050")
 ::
 
 
-METHOD:: glyphName
+method:: glyphName
+Returns the name of a selected glyph
 
-returns:: the name of a selected glyph
+method:: glyphCodepoint
+Returns a String of the codepoint of a selected glyph
 
-METHOD:: glyphCodepoint
+method:: glyphDesc
+Returns the SMuFL description of a selected glyph
 
-returns:: a String of the codepoint of a selected glyph
-
-
-METHOD:: glyphDesc
-
-returns:: the SMuFL description of a selected glyph
-
-METHOD:: postGlyphDict
-
-returns:: Posts the Dictionary of the selected glyph data
+method:: postGlyphDict
+Returns Posts the Dictionary of the selected glyph data
 
 
 subsection:: Searching
 
-METHOD:: search
+method:: search
 search for a glyph
 
-ARGUMENT:: str
+argument:: str
 A String to be searched for within the glyph names Dictionary
+Returns prints how many matches (if any) are found
 
-returns:: prints how many matches (if any) are found
+method:: printSearchResults
+Pretty print search results.
+Returns prints a list of matches, with index for selecting glyph
 
-METHOD:: printSearchResults
-pretty print search results
-
-returns:: prints a list of matches, with index for selecting glyph
-
-METHOD:: searchKeys
-
-returns:: an Array of glyph name matches from a search
+method:: searchKeys
+Returns an Array of glyph name matches from a search
 
 
-METHOD:: glyphIndex
-sets the current glyph
-
-ARGUMENT:: index
+method:: glyphIndex
+Sets the current glyph
+argument:: index
 An Integer to select a glyph from a list of returned search results
 
-METHOD:: clear
+method:: clear
 clears the current search
 
-
-EXAMPLES::
+examples::
 
 code::
 

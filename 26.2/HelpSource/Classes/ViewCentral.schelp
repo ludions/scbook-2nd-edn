@@ -1,3 +1,4 @@
+
 class:: ViewCentral
 summary:: The view component for model-view window classes that centre a view within a variable size window, maintaining a fixed view size.
 categories:: gui>views

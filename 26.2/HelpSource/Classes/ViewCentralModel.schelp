@@ -1,3 +1,4 @@
+
 class:: ViewCentralModel
 summary:: A model for window and view management with persistent state
 categories:: gui>views
