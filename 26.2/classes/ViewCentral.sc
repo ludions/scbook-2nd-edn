@@ -200,6 +200,7 @@ ViewCentral {
 
 		this.makeLayout;
 
+		this.applyWinName_(model.winName);
 		this.applyMarginCol_(model.marginCol);
 		this.applyViewCol_(model.viewCol);
 		this.applyWinCol_(model.winCol);
