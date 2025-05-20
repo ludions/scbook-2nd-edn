@@ -42,28 +42,27 @@ Returns whether a UserView is being used.
 method:: winDims
 Get or set the window dimensions.
 argument:: dimensions
-An array of two numbers [width, height] specifying the new window dimensions.
+Window dimensions as an array [width, height].
+discussion:: See also the related method link::#-resizeWin::, which has two integers as arguments.
 
 method:: winPos
 Get or set the window position.
 argument:: position
-An array of two numbers [x, y] specifying the new window position.
+An array [x, y] specifying the window position in relation to top left.
+discussion:: See also the related method link::#-moveWin::, which has two integers as arguments.
 
 method:: winCol
 Get or set the window background color.
-
 argument:: color
 A Color instance.
 
 method:: viewCol
 Get or set the view background color.
-
 argument:: color
 A Color instance.
 
 method:: marginCol
 Get or set the margin area color.
-
 argument:: color
 A Color instance.
 
@@ -71,22 +70,20 @@ method:: margins
 Get or set margins for the view layout.
 
 argument:: argMargins
-Margins in pixels. Can be a single number (applies to all sides), an array of 2 [horiz, vert], or an array of 4 [left, top, right, bottom].
+Margins in pixels. Can be a single number (applies to all sides), an array of two [horiz, vert], or an array of four [left, top, right, bottom] values.
 
 method:: winName
 Get or set the window name.
-
 argument:: string
 A String for the window name.
 
 method:: escKey
 Get or set the keycode used to exit fullscreen mode.
-
 argument:: int
-The keycode integer. Default is 53 (escape key on macOS).
+The keycode integer. Default is 53 (escape key on MacOS).
 
 method:: restoreCols
-Restore all colors to default values.
+Restore all colors to default (monochrome) values.
 
 method:: removeViews
 Remove all views from the window without closing it.
@@ -96,24 +93,25 @@ Resize the window to match the original view dimensions.
 
 method:: resizeWin
 Resize the window to specified dimensions.
-
 argument:: x
 Width in pixels.
-
 argument:: y
 Height in pixels.
+discussion:: See also method link::#-winDims::, which has an Array argument.
 
 method:: moveWin
 Move the window to specified position.
-
 argument:: x
 Horizontal position in pixels.
-
 argument:: y
 Vertical position in pixels.
+discussion:: See also method link::#-winPos::, which has an Array argument.
 
 method:: endFullScreen
 Exit fullscreen mode. Usually performed using the escKey.
+
+method:: screenHeight
+Get the screenHeight
 
 method:: fullScreen
 Enter fullscreen mode.
