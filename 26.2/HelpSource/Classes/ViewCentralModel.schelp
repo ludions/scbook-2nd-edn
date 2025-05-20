@@ -1,0 +1,198 @@
+class:: ViewCentralModel
+summary:: A model for window and view management with persistent state
+categories:: gui>views
+related:: Classes/ViewCentral, Classes/UserView, Classes/View, Classes/Window
+
+description::
+ViewCentralModel is the model class for window classes that centre a view within a variable size window. The class maintains a fixed view size, however view margins and window size can be altered. This functionality can be used to fullscreen a window while keeping a view centered.
+
+The model maintains the state of windows and views, while ViewCentral handles the creation of the gui. A ViewCentralModel intance is passed as an argument into a ViewCentral instance; interaction with the classes should be done via the model.
+
+classmethods::
+
+method:: new
+Create a new ViewCentralModel instance.
+
+argument:: dims
+An array of two numbers [width, height] specifying the view dimensions, which remain fixed. Defaults to [620, 460] if nil.
+
+argument:: margins
+Margins in pixels. Can be a single Integer (applies to all sides), an array of two [horiz, vert], or an array of four [left, top, right, bottom]. Defaults to [20, 20, 20, 20] if nil.
+
+argument:: usrViewBool
+Boolean indicating whether to use a UserView (true) or a regular View (false). Defaults to true.
+
+
+instancemethods::
+
+private:: calcViewDims, calcViewMargSums, cleanMarginsFormat, init
+
+method:: dims
+Returns the base dimensions of the view.
+
+method:: viewDims
+Returns the dimensions of the inner view area (dims - margins).
+
+method:: marginSums
+Returns the sum of margins [horizontal, vertical].
+
+method:: usrViewBool
+Returns whether a UserView is being used.
+
+method:: winDims
+Get or set the window dimensions.
+argument:: dimensions
+An array of two numbers [width, height] specifying the new window dimensions.
+
+method:: winPos
+Get or set the window position.
+argument:: position
+An array of two numbers [x, y] specifying the new window position.
+
+method:: winCol
+Get or set the window background color.
+
+argument:: color
+A Color instance.
+
+method:: viewCol
+Get or set the view background color.
+
+argument:: color
+A Color instance.
+
+method:: marginCol
+Get or set the margin area color.
+
+argument:: color
+A Color instance.
+
+method:: margins
+Get or set margins for the view layout.
+
+argument:: argMargins
+Margins in pixels. Can be a single number (applies to all sides), an array of 2 [horiz, vert], or an array of 4 [left, top, right, bottom].
+
+method:: winName
+Get or set the window name.
+
+argument:: string
+A String for the window name.
+
+method:: escKey
+Get or set the keycode used to exit fullscreen mode.
+
+argument:: int
+The keycode integer. Default is 53 (escape key on macOS).
+
+method:: restoreCols
+Restore all colors to default values.
+
+method:: removeViews
+Remove all views from the window without closing it.
+
+method:: shrinkWin
+Resize the window to match the original view dimensions.
+
+method:: resizeWin
+Resize the window to specified dimensions.
+
+argument:: x
+Width in pixels.
+
+argument:: y
+Height in pixels.
+
+method:: moveWin
+Move the window to specified position.
+
+argument:: x
+Horizontal position in pixels.
+
+argument:: y
+Vertical position in pixels.
+
+method:: endFullScreen
+Exit fullscreen mode. Usually performed using the escKey.
+
+method:: fullScreen
+Enter fullscreen mode.
+
+method:: front
+Bring the window to front.
+
+method:: close
+Close the window.
+
+
+examples::
+
+code::
+// Create model and view
+m = ViewCentralModel.new([300, 600], 50!4);
+v = ViewCentral.new(Window().front, m);
+
+// Demonstrate fullscreen and escape key handling
+// press escape key (Apple MPP) to end fullScreen
+m.escKey // 53
+m.fullScreen
+m.escKey_(12) // 'q' - see "KeyState".help
+m.fullScreen
+
+// Get information about the window and views
+
+m.dims // [300, 600]
+m.margins // [50, 50, 50, 50]
+m.marginSums // [100, 100]
+
+// Modify margins and dimensions
+m.margins_([100, 50])
+m.margins_(19)
+m.margins_(0) // the margins disapear
+m.resizeWin(500, 620)
+m.moveWin(0, 0);
+m.shrinkWin; // same as resizeWin(*m.dims);
+
+
+// Change colors
+m.resizeWin(360, 660)// reveals window background
+m.margins_(30) // reveals margins
+m.viewCol_(Color.green);
+m.winCol_(Color.yellow);
+m.marginCol_(Color.red);
+
+// Set window name
+m.winName_("My Colorfuel Window")
+
+// Close the window
+m.close;
+
+// Demonstrate persistent layout with a new window
+(
+// Create model with specific settings
+m = ViewCentralModel.new([300, 300], 75!4);
+v = ViewCentral.new(Window().front, m);
+
+// Configure appearance
+m.resizeWin(400, 400);
+m.moveWin(0, 0);
+m.viewCol_(Color.green);
+m.winCol_(Color.yellow);
+m.marginCol_(Color.red);
+)
+
+// Close the window
+m.close;
+
+// Remake window - layout is preserved in model
+v = ViewCentral.new(nil, m);
+
+m.removeViews // removes green view with red margin
+
+// Remake views using existing window
+v = ViewCentral.new(v.win, m);
+m.restoreCols // monochrome
+m.close;
+::
+
+

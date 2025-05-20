@@ -1,0 +1,65 @@
+class:: ViewCentral
+summary:: The view component for model-view window classes that centre a view within a variable size window, maintaining a fixed view size.
+categories:: gui>views
+related:: Classes/ViewCentralModel, Classes/UserView, Classes/View, Classes/Window
+
+description::
+ViewCentral is the view component in a model-view architecture for window management. It handles the visual representation of state maintained by a ViewCentralModel instance. The class maintains a fixed view size, however view margins and window size can be altered. These classes can be used to fullscreen a window while keeping a view centered.
+
+note::
+User interaction is not intended directly with ViewCentral methods. With the exception of the the four methods below, all operations are intended for the model. See link::Classes/ViewCentralModel::.
+::
+
+classmethods::
+
+method:: new
+Creates a new ViewCentral instance with the given window and model.
+
+argument:: win
+A Window instance. If nil, a new Window will be created.
+
+argument:: model
+A ViewCentralModel instance.
+
+
+instancemethods::
+
+private:: init, applyMarginCol, applyViewCol, applyWinCol, applyWinName, applyMargins, applyWinSize, applyWinPos, applyRemove, applyFullScreen, applyFront, applyEndFullScreen, applyClose, registerKeyDownAction, registerWinAction, getScreenHeight, makeLayout, update
+
+method:: win
+Returns the managed Window instance.
+
+method:: view
+Returns the content view (either a UserView or View) where custom drawing can be performed.
+
+method:: marginView
+Returns the containing View with margins.
+
+method:: model
+Returns the ViewCentralModel that controls this view.
+
+
+examples::
+
+code::
+// Make a model, pass into the view
+m = ViewCentralModel.new([1080, 720]);
+v = ViewCentral.new(model: m);
+
+// Return the model via the view if needed
+v.model
+
+// Access gui elements directly
+v.win
+v.view
+v.marginView
+
+// Methods should be performed from the model
+m.front;
+m.margins_(50);
+m.viewCol_(Color.blue);
+m.marginCol_(Color.rand);
+
+// Close the window
+m.close;
+::
