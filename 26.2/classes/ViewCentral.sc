@@ -161,7 +161,12 @@ ViewCentral {
 	init { arg aWin, aModel;
 
 		win = aWin ?? {Window.new.front};
-		model = aModel;
+		model = if(aModel.isNil){
+			"ViewCentralModel instance required".error;
+			^this
+			}{
+			aModel
+		};
 		model.addDependant(this);
 
 		usrViewBool = model.usrViewBool;
