@@ -1,11 +1,13 @@
 
 /*
-ViewCentral
-ViewCentralModel
+ViewCentral (view)
+ViewCentralModel (model)
+See also optional class ViewCentralOV, an overview facade/coordinator example
 
 © 2022-2025 Tom Hall
 
 */
+
 
 ViewCentralModel {
 
@@ -33,6 +35,15 @@ ViewCentralModel {
 
 		^this
 	}
+
+
+	windowClosed {
+		// "ViewCentral Window has been closed".postln;
+		// notify any observers, e.g. ViewCentralOV if used
+		this.changed(\windowClosed);
+		^this
+	}
+
 
 	escKey_ { |int = 53|
 		escKey = int;
@@ -164,7 +175,7 @@ ViewCentral {
 		model = if(aModel.isNil){
 			"ViewCentralModel instance required".error;
 			^this
-			}{
+		}{
 			aModel
 		};
 		model.addDependant(this);
@@ -186,6 +197,7 @@ ViewCentral {
 		win.onClose_({
 			win.endFrontAction = {};
 			model.removeDependant(this);
+			model.windowClosed; // notify model of window closure
 		});
 
 		// becomes a margin to the view
