@@ -1,0 +1,156 @@
+class:: ViewCentralOV
+summary:: A simple example implementation of a facade/coordinator for ViewCentral and ViewCentralModel
+categories:: gui>views
+related:: Classes/ViewCentralModel, Classes/ViewCentral, Classes/Window
+
+
+description::
+ViewCentralOV shows how to build a container class that coordinate ViewCentralModel and ViewCentral. It is a  optional simple example of a design pattern implementatation rather a dependency for ViewCentralModel or ViewCentral.
+
+ViewCentralOV demonstrated:
+
+list::
+## Method forwarding using link::#-doesNotUnderstand::
+## Window recreation while maintaining model state
+## Notification forwarding from model to observers
+::
+
+note::
+ViewCentralOV is intended as a template to use or adapt for other container classes.
+::
+
+classmethods::
+
+method:: new
+Creates a new ViewCentralOV instance that manages both a model and view.
+
+argument:: dims
+An array of two Integers [width, height] specifying the view dimensions. Passed to the model.
+
+argument:: margins
+Margins in pixels. Can be a single Integer, an array of two [horiz, vert], or an array of four [left, top, right, bottom]. Passed to the model.
+
+argument:: usrViewBool
+Boolean indicating whether to use a UserView (true) or a regular View (false). Passed to the model.
+
+argument:: win
+An optional Window instance. If nil, a new Window is created.
+
+instancemethods::
+
+method:: window
+Returns the current Window instance.
+
+method:: model
+Returns the ViewCentralModel instance.
+
+method:: view
+Returns the ViewCentral instance.
+
+method:: recreateView
+Recreates the view while maintaining model state.
+argument:: win
+An optional Window instance. If nil, a new Window is created.
+
+discussion::
+This method demonstrates how to handle window recreation. It creates a new ViewCentral instance with the same model, preserving state.
+
+method:: isViewClosed
+Returns true if the view doesn't exist or its window is closed.
+
+method:: ensureViewExists
+Ensures a valid view exists, recreates it if necessary. Example of a "self healing" design.
+
+method:: contentView
+Returns the content view.
+
+discussion::
+This is a convenience method, providing direct access to the View or UserView
+
+code::
+// instead of
+v = ViewCentralOV.new;
+Button(v.view.view, Rect(10, 10, 100, 30));
+
+// convenience method:
+Button(v.contentView, Rect(10, 50, 100, 30));
+::
+
+method:: refresh
+Refreshes the content view to display any changes.
+
+method:: autoRecreate
+Get or set whether views should be automatically recreated when methods are called on closed views.
+
+argument:: bool
+Boolean value. If false (default), an error is posted. If true, closed views are automatically recreated when methods are called.
+
+See examples below.
+
+method:: doesNotUnderstand
+Delegates calls to undefined methods and forwards them to the appropriate class instance (model / view).
+
+argument:: selector
+The name of the method that was called but not found in this class.
+
+argument:: ... args
+The arguments that were passed to the undefined method (collected using SuperCollider's variable argument syntax code::...args::).
+
+discussion::
+A part of the Facade pattern implementation which is invoked when a method not defined in ViewCentralOV is called.
+
+method:: update
+Forwards notifications from the model to this object's dependents.
+argument:: obj
+The object that sent the notification (typically the model).
+argument:: what
+A symbol indicating what changed.
+argument:: value
+The new value or additional information about the change.
+
+examples::
+
+code::
+
+
+// Simple example with all arguments specified
+
+// Create a custom window first
+w = Window.new.front;
+
+// Create ViewCentralOV with all arguments
+// |dims, margins, usrViewBool, win|
+v = ViewCentralOV.new([450, 340], [30, 20],  true, w)
+
+
+(
+// Use forwarded methods mechanism
+v.winName_("ViewCentralOV Example");
+v.viewCol_(Color.grey(0.9));
+v.marginCol_(Color.yellow(0.9));
+v.resizeWin(500, 400);
+v.winCol_(Color.blue);
+// Add content to the view
+v.contentView.drawFunc = {
+Pen.fillColor = Color.blue;
+Pen.fillOval(Rect(150, 100, 100, 100));
+Pen.stringCenteredIn(
+    "ViewCentralOV example",
+    Rect(0, 0, v.contentView.bounds.width, 30)
+);
+};
+v.contentView.refresh;
+)
+
+// Close the window
+v.close;
+
+// Automatic recreation
+v = ViewCentralOV.new;
+v.autoRecreate_(true);
+
+v.close;
+
+// Window automatically recreates
+v.marginCol_(Color.yellow);
+::
