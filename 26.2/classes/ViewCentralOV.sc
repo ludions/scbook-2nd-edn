@@ -3,7 +3,7 @@
 ViewCentralOV
 An optional overview facade/coordinator example for ViewCentral (view) and ViewCentralModel (model)
 
-© 2022-2025 Tom Hall
+© 2025 Tom Hall
 
 */
 
