@@ -95,6 +95,7 @@ WinBlockModel : ViewCentralModel {
 
 	}
 
+	// makes specs that map 0-1.0 to margin dims
 	calcViewPosSpecs {  |argMarginSums|
 		var aViewPosSpecsArr;
 		aViewPosSpecsArr = [[], []];
@@ -107,7 +108,7 @@ WinBlockModel : ViewCentralModel {
 	// pos %s from margins
 	calcViewPosPct { |argMargins, argViewPosSpecs|
 		var posX, posY;
-		// if(curPos.isNil, {curPos = [0.5, 0.5] }); // avoid nils
+
 		// calcs using current margins
 		if (argViewPosSpecs.isNil, {
 			argViewPosSpecs = this.calcViewPosSpecs(marginSums); // from viewMargSums
@@ -120,6 +121,7 @@ WinBlockModel : ViewCentralModel {
 			viewPosPct[0] // use old value if no X margin
 		});
 
+		// calc Y pos (inverted)
 		posY = if(argViewPosSpecs[1].range>0, {
 			1 - argViewPosSpecs[1].unmap(argMargins[1]);
 		}, {
@@ -166,7 +168,7 @@ WinBlockModel : ViewCentralModel {
 		^this;
 	}
 
-	updateMargins { arg aMargins;
+	validateMargins { arg aMargins;
 		aMargins = aMargins.max(0); // ensure no negative margins
 		if (aMargins != margins, {
 			margins = aMargins;
@@ -196,10 +198,10 @@ WinBlockModel : ViewCentralModel {
 			viewPosPctSpecs = this.calcViewPosSpecs(marginSums);
 
 			// calc margins that maintain pos %
-			newMargins = this.calcMargsFromViewPos(*viewPosPct);
+			newMargins = this.calcMarginsFromViewPos(*viewPosPct);
 
 			// Update margins (but viewDims is already set)
-			this.updateMargins(newMargins);
+			this.validateMargins(newMargins);
 		}
 		^this
 	}
@@ -225,38 +227,31 @@ WinBlockModel : ViewCentralModel {
 		^this
 	}
 
-	calcMargsFromViewPos { arg x, y; // %s
-		var aViewMargArrX, aViewMargArrY, newMargins;
+
+	calcMarginsFromViewPos { |x, y|  // %s
+		var leftMargin, topMargin, rightMargin, bottomMargin;
 
 		// assumes viewPosPctSpecs is correct
+		// calc horizontal margins
+		leftMargin = viewPosPctSpecs[0].map(x);
+		rightMargin = viewPosPctSpecs[0].map(1 - x);
 
-		// calculate new X margin positions (pixels)
-		aViewMargArrX = [
-			viewPosPctSpecs[0].map(x),
-			viewPosPctSpecs[0].map(1 - x)
-		];
+		// calc vertical margins (Y inverted)
+		topMargin = viewPosPctSpecs[1].map(1 - y);
+		bottomMargin = viewPosPctSpecs[1].map(y);
 
-		// calculate new Y margin positions (pixels)
-		aViewMargArrY = [
-			viewPosPctSpecs[1].map(1 - y),
-			viewPosPctSpecs[1].map(y)
-		];
-
-		// new margins
-		// viewMargSums and viewSizeDims do not change
-
-		newMargins = [
-			aViewMargArrX[0],
-			aViewMargArrY[0],
-			aViewMargArrX[1],
-			aViewMargArrY[1]
-		];
-		^newMargins
+		^[leftMargin, topMargin, rightMargin, bottomMargin]
 	}
 
-	centreView { this.viewPosPct_(0.5, 0.5); ^this}
+	centreView {
+		this.viewPosPct_(0.5, 0.5);
+		^this
+	}
 
-	centerView { this.centreView; ^this}
+	centerView {
+		this.centreView;
+		^this
+	}
 
 	viewPosPct_ { arg x, y; // %
 		var newViewPosPct, newMargins;
@@ -265,11 +260,11 @@ WinBlockModel : ViewCentralModel {
 		if(newViewPosPct != viewPosPct, {
 
 			// update margins (viewMargSums do not change)
-			newMargins = this.calcMargsFromViewPos(*newViewPosPct);
+			newMargins = this.calcMarginsFromViewPos(*newViewPosPct);
 
 			// update margins without triggering parent's recalcs
 			// - will do changed as needed
-			this.updateMargins(newMargins);
+			this.validateMargins(newMargins);
 
 			viewPosPct = newViewPosPct;
 			this.changed(\viewPosPct, viewPosPct);
