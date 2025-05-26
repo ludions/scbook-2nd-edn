@@ -1,109 +1,69 @@
 
 /*
 WinBlock
-WinBlockModel : ViewCentralModel
+WinBlockModel
 WinBlockGui
 
-© 2022 Tom Hall
+Dependency: ViewCentralModel
+
+© 2022–2025 Tom Hall
 www.ludions.com
 
 */
 
 
 WinBlock {
-	var <m, <dims, <win, <v, usrViewBool;
+	var <model, <win, <viewCentral, <usrViewBool;
 
 	*new { arg win, dims, margins, usrViewBool;
 		^super.new.init(win, dims, margins, usrViewBool);
 	}
 
 	init { |aWin, aDims, aMargins, aUsrViewBool|
-		dims = if(aDims.isNil, {[500, 300]}, {aDims});
-		if(aMargins.isNil){
-			aMargins = ((dims.sum/2) * 0.1).floor.asInteger
-		};
-		m = WinBlockModel.new(dims, aMargins);
-		dims = m.dims;
 		usrViewBool = aUsrViewBool;
+		model = WinBlockModel.new(aDims, aMargins);
 		this.makeView(aWin, usrViewBool);
 		^this
 	}
 
-	endFullScreen {
-		m.endFullScreen;
+	view { ^viewCentral.view }  // the View / UserView
+
+	// remake if the main view is closed
+	newView {
+		this.makeView;
 		^this
 	}
 
-	fullScreen {
-		m.fullScreen;
-		^this
-	}
-
-	shrinkWin {m.shrinkWin; ^this } // shrink Window margins
-
-	resizeWin {|x, y| m.resizeWin(x, y); ^this} //
-
-	moveWin {|x, y| m.moveWin(x, y); ^this} //
-
-	winDims {^m.winDims}
-
-	margins { ^m.margins }
-
-	margins_ {|args| m.margins_(args); ^this}
-
-	view { ^v.view }
-
-	viewDims { ^m.viewDims; }
-
-	viewDims_ {|x, y| m.viewDims_(x, y); ^this}
-
-	viewPosPx {^m.viewPosPx;}
-
-	viewPosPx_ {|x, y| m.viewPosPx_(x, y); ^this }
-
-	viewPos { ^m.viewPos;  }
-
-	viewPos_ {|x, y| m.viewPos_(x, y); ^this }
-
-	centreView { m.centreView; ^this}
-
-	centerView { m.centreView; ^this}
-
-	viewDimsPct {^m.viewDimsPct; }
-
-	viewDimsPct_{|x, y| m.viewDimsPct_(x, y); ^this }
-
-	snapshotPx { ^m.snapshotPx;  }
-
-	snapshotPct { ^m.snapshotPct;  }
-
-	restoreCols { m.restoreCols; ^this }
-
-	winCol_ {|color| m.winCol_(color); ^this }
-
-	winCol {^m.winCol }
-
-	marginCol_ {|color| m.marginCol_(color); ^this }
-
-	marginCol { ^m.marginCol }
-
-	viewCol_ {|color| m.viewCol_(color); ^this }
-
-	viewCol {^m.viewCol }
-
-	close { m.close; ^this }
-
-	newView {this.makeView(aUsrViewBool: usrViewBool); ^this}
-
-	makeView { |aWin, aUsrViewBool|
-		v = ViewCentral.new(aWin, m, aUsrViewBool);
-		win = v.win;
+	makeView { |aWin|
+		viewCentral = ViewCentral.new(aWin, model, usrViewBool);
+		win = viewCentral.win;
 		^this
 	}
 
 	gui {|scale=0.33|
-		^WinBlockGui.new(m, scale);
+		^WinBlockGui.new(model, scale);
 	}
+
+	// delegate user methods to model implementation
+	doesNotUnderstand { |selector ... args|
+		var result;
+		// check if the model responds to this selector
+		if(model.respondsTo(selector)) {
+			// forward message to the model
+			result = model.performList(selector, args);
+
+			// does the model returns itself?
+			if(result === model) {
+				^this
+			} {
+				^result
+			}
+		} {
+			// neither WinBlock nor model have this method
+			^super.doesNotUnderstand(selector, *args)
+		}
+	}
+
 }
 
 
@@ -362,14 +322,6 @@ WinBlockModel : ViewCentralModel {
 		^this
 	}
 
-
-
-
-
-
-
-
-
 }
 
 
@@ -381,67 +333,56 @@ WinBlockGui {
 	}
 
 	init { |argModel, argScale, argVerbose|
+		var winBounds;
 		model = argModel;
 		model.addDependant(this);
-		scale = argScale;
+		scale = argScale.clip(0.2, 1); // sensible values
 		verbose = argVerbose;
 
+		slider2D = Slider2D();
 		sliderY = Slider.new;
 		sliderX = Slider.new.orientation_(\horizontal);
-		sliderY.thumbSize;
-		sliderX.thumbSize;
 		button = Button.new;
-		button.string_("C"); // centre
-
+		button.string_("⊕"); // centre
 		// avoid larger rectangular button
-		button.maxWidth_(button.sizeHint.height;);
+		button.maxWidth_(button.sizeHint.height);
 
-		window = Window.new(bounds: Rect(
-			200,
-			200,
-			(model.dims[0] * scale).round + sliderY.thumbSize,
-			(model.dims[1] * scale).round + sliderY.thumbSize
-		));
 
-		window.layout_(layout = GridLayout.rows(
-			[slider2D = Slider2D(), sliderY],
+		layout = GridLayout.rows(
+			[slider2D, sliderY],
 			[sliderX, button]
-		)).front;
+		);
 
-		layout.minColumnWidth(0).postln;
-		layout.minColumnWidth(1).postln;
+		// set columns stretch
+		layout.setColumnStretch(0, 1);  // main column stretches
+		layout.setColumnStretch(1, 0);  // side column is fixed
+
+		winBounds = this.calcWindowBounds(model.dims, scale, sliderY.thumbSize);
+		window = Window.new(bounds:winBounds);
+		window.layout_(layout).front;
 
 		// change view position
 		slider2D.action = { |view|
 			model.viewPos_(view.x, view.y);
-			if(verbose){
-				//[view.x, view.y].postln;
-				model.viewPos.round(0.01).postln;
-			}
+			this.postVerbose("View Pos", model.viewPos);
 		};
 
 		sliderX.action = { |view|
 			// change viewSize width
 			model.viewDimsPct_(x: view.value);
-			if(verbose){
-				model.viewDimsPct.round(0.01).postln;
-			}
+			this.postVerbose("View Pct", model.viewDimsPct);
 		};
 
 		sliderY.action = { |view|
 			// change viewSize height
 			model.viewDimsPct_(y: view.value);
-			if(verbose){
-				model.viewDimsPct.round(0.01).postln;
-			}
+			this.postVerbose("View Pct", model.viewDimsPct);
 		};
 
 		button.action = {|view|
 			// centre view margins
 			model.centreView;
-			if(verbose){
-				model.viewPos.round(0.01).postln;
-			}
+			this.postVerbose("View Pos", model.viewPos);
 		};
 
 		// set initial values
@@ -452,6 +393,29 @@ WinBlockGui {
 		window.onClose_({ model.removeDependant(this)});
 		^window // rtn win
 	}
+
+	postVerbose { |label, value, precision = 0.01|
+		if(verbose) {
+			format("% : %", label, value.round(precision)).postln;
+		}
+	}
+
+	calcWindowBounds { |modelDims, scale, thumbSize|
+		var scaledWidth, scaledHeight, totalWidth;
+		var totalHeight, screenBounds, left, top;
+		scaledWidth = (modelDims[0] * scale).round;
+		scaledHeight = (modelDims[1] * scale).round;
+		totalWidth = scaledWidth + thumbSize;
+		totalHeight = scaledHeight + thumbSize;
+
+		// place gui bottom left of screen
+		screenBounds = Window.screenBounds;
+		left = (screenBounds.width - totalWidth) / 5;
+		top = (screenBounds.height - totalHeight) / 4;
+
+		^Rect(left, top, totalWidth, totalHeight)
+	}
+
 
 	update {|obj, what, val|
 		case
