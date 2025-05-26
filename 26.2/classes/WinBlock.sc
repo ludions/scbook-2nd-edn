@@ -37,6 +37,7 @@ WinBlock {
 	makeView { |aWin|
 		viewCentral = ViewCentral.new(aWin, model, usrViewBool);
 		win = viewCentral.win;
+		win.front;
 		^this
 	}
 
@@ -59,7 +60,7 @@ WinBlock {
 				^result
 			}
 		} {
-			// neither WinBlock nor model have this method
+			// if neither WinBlock nor model have this selected method
 			^super.doesNotUnderstand(selector, *args)
 		}
 	}
@@ -70,7 +71,7 @@ WinBlock {
 
 WinBlockModel : ViewCentralModel {
 
-	var <viewSizeSpecs, <viewDimsPct, <viewPos, <viewPosSpecs;
+	var <viewSizeSpecs, <viewDimsPct, <viewPosPct, <viewPosPctSpecs;
 
 	init { |aDims, aMargins, aUsrViewBool|
 
@@ -78,14 +79,17 @@ WinBlockModel : ViewCentralModel {
 
 		// viewSizeSpecs specs should not change
 		viewSizeSpecs = [[], []];
+		// x-axis is 0 to window width
 		viewSizeSpecs[0] = [0, dims[0]].asSpec;
+		// y-axis is 0 to window height
 		viewSizeSpecs[1] = [0, dims[1]].asSpec;
 
 		viewDimsPct = this.calcViewDimsPct(viewDims);
 
-		viewPosSpecs = this.calcViewPosSpecs(marginSums);
-		viewPos = [0.5, 0.5]; 	// if margins 0, 0.5 initial default
-		viewPos = this.calcViewPosPct(margins, viewPosSpecs);
+		// marginSums are caclulated in parent method margins_
+		viewPosPctSpecs = this.calcViewPosSpecs(marginSums);
+		viewPosPct = [0.5, 0.5]; 	// if margins 0, 0.5 initial default
+		viewPosPct = this.calcViewPosPct(margins, viewPosPctSpecs);
 
 		^this
 
@@ -100,8 +104,6 @@ WinBlockModel : ViewCentralModel {
 		^aViewPosSpecsArr
 	}
 
-
-
 	// pos %s from margins
 	calcViewPosPct { |argMargins, argViewPosSpecs|
 		var posX, posY;
@@ -115,25 +117,29 @@ WinBlockModel : ViewCentralModel {
 		posX = if(argViewPosSpecs[0].range>0, {
 			argViewPosSpecs[0].unmap(argMargins[0]);
 		},{
-			viewPos[0] // use old value if no X margin
+			viewPosPct[0] // use old value if no X margin
 		});
 
 		posY = if(argViewPosSpecs[1].range>0, {
 			1 - argViewPosSpecs[1].unmap(argMargins[1]);
 		}, {
-			viewPos[1] // use old value if no Y margin
+			viewPosPct[1] // use old value if no Y margin
 		});
 		^[posX, posY]
 	}
 
-	viewPosPx {^ [margins[0], margins[1]] }
+	viewPos {^ [margins[0], margins[1]] }
 
-	snapshotPx {^[viewDims, this.viewPosPx, dims]}
 
-	snapshotPct {
-		^[viewDimsPct, viewPos, dims]
+	snapshot {
+		"// [viewDims, viewPos, dims, winPos]".postln;
+		^[viewDims, this.viewPos, dims, this.winPos.asInteger]
 	}
 
+	snapshotPct {
+		"// [viewDimsPct, viewPosPct, dims, winPos]".postln;
+		^[viewDimsPct.round(0.001), viewPosPct.round(0.001), dims, this.winPos.asInteger]
+	}
 
 	calcViewDimsPct { |argViewSize|
 		// viewSizeSpecs are fixed
@@ -143,9 +149,7 @@ WinBlockModel : ViewCentralModel {
 		]
 	}
 
-
-
-	viewPosPx_{|x, y|
+	viewPos_{|x, y|
 		var newMargins;
 		if(x + viewDims[0] > dims[0]){
 			x = marginSums[0];
@@ -162,7 +166,7 @@ WinBlockModel : ViewCentralModel {
 		^this;
 	}
 
-	prUpdateMargins { arg aMargins;
+	updateMargins { arg aMargins;
 		aMargins = aMargins.max(0); // ensure no negative margins
 		if (aMargins != margins, {
 			margins = aMargins;
@@ -172,43 +176,33 @@ WinBlockModel : ViewCentralModel {
 		});
 	}
 
-	viewDims_ { arg x, y;
+	viewDims_ { |x, y|
+		var newDims, newMargins;
 
-		var newMargins, newDims;
-		var aViewMargArrX, aViewMargArrY;
-
-		newDims = viewDims.copy;
-
-		// allow input to either x or y if not both
-		x = if(x.isNil, {viewDims[0]}, {x});
-		y = if(y.isNil, {viewDims[1]}, {y});
-
+		x = x ?? viewDims[0];
+		y = y ?? viewDims[1];
 		newDims = [x, y];
 
-		if(newDims != viewDims, {
-
-			// change dims instance var
+		if(newDims != viewDims) {
+			// set viewDims first
 			viewDims = newDims;
-			// this.changed(\viewSize, viewDims); // TODO CHECK
 
-			// update also
+			// update %s
 			viewDimsPct = this.calcViewDimsPct(viewDims);
 			this.changed(\viewDimsPct, viewDimsPct);
 
-			marginSums = (dims - newDims).max(0); // instance var
+			// calc new margin sums
+			marginSums = (dims - viewDims).max(0);
+			viewPosPctSpecs = this.calcViewPosSpecs(marginSums);
 
-			viewPosSpecs = this.calcViewPosSpecs(marginSums);
+			// calc margins that maintain pos %
+			newMargins = this.calcMargsFromViewPos(*viewPosPct);
 
-			newMargins = this.calcMargsFromViewPos(*viewPos);
-
-			this.prUpdateMargins(newMargins);
-
-		});
-
+			// Update margins (but viewDims is already set)
+			this.updateMargins(newMargins);
+		}
 		^this
 	}
-
-	// TODO consider: marginsDimsPct_
 
 	// set viewSize as %s of view
 	// Floats btn 0 ..1
@@ -231,23 +225,21 @@ WinBlockModel : ViewCentralModel {
 		^this
 	}
 
-
-
 	calcMargsFromViewPos { arg x, y; // %s
 		var aViewMargArrX, aViewMargArrY, newMargins;
 
-		// assumes viewPosSpecs is correct
+		// assumes viewPosPctSpecs is correct
 
 		// calculate new X margin positions (pixels)
 		aViewMargArrX = [
-			viewPosSpecs[0].map(x),
-			viewPosSpecs[0].map(1 - x)
+			viewPosPctSpecs[0].map(x),
+			viewPosPctSpecs[0].map(1 - x)
 		];
 
 		// calculate new Y margin positions (pixels)
 		aViewMargArrY = [
-			viewPosSpecs[1].map(1 - y),
-			viewPosSpecs[1].map(y)
+			viewPosPctSpecs[1].map(1 - y),
+			viewPosPctSpecs[1].map(y)
 		];
 
 		// new margins
@@ -262,66 +254,55 @@ WinBlockModel : ViewCentralModel {
 		^newMargins
 	}
 
-	centreView { this.viewPos_(0.5, 0.5); ^this}
+	centreView { this.viewPosPct_(0.5, 0.5); ^this}
 
 	centerView { this.centreView; ^this}
 
-	viewPos_ { arg x, y; // %
-
-		var newViewPos, newMargins;
-
-		newViewPos = [x, y];
-
+	viewPosPct_ { arg x, y; // %
+		var newViewPosPct, newMargins;
+		newViewPosPct = [x, y];
 		// check for new pos change
-		if(newViewPos != viewPos, {
+		if(newViewPosPct != viewPosPct, {
 
 			// update margins (viewMargSums do not change)
-			newMargins = this.calcMargsFromViewPos(*newViewPos);
+			newMargins = this.calcMargsFromViewPos(*newViewPosPct);
 
-			// update margins - will do changed as needed
-			this.prUpdateMargins(newMargins);
+			// update margins without triggering parent's recalcs
+			// - will do changed as needed
+			this.updateMargins(newMargins);
 
-			viewPos = newViewPos;
-			this.changed(\viewPos, viewPos);
+			viewPosPct = newViewPosPct;
+			this.changed(\viewPosPct, viewPosPct);
 
 		});
 		^this
 	}
 
-
-
-	// enter as int or arr (of 2, or 4 values)
 	margins_ { |argMargins|
-		var newMargins, newViewPos, newViewSize, newMarginSums;
+		var oldMarginSums, oldMargins;
+		oldMargins = margins;
+		oldMarginSums = marginSums;
 
-		argMargins = this.cleanMarginsFormat(argMargins);
+		// class parent makes initial changes
+		super.margins_(argMargins);
 
-		if ( argMargins != margins, {
+		// if margins actually changed, make changes to Pct info
+		if(margins != oldMargins) {
+			if(marginSums != oldMarginSums) {
+				// Update position specs when margin space changes
+				viewPosPctSpecs = this.calcViewPosSpecs(marginSums);
+			};
 
-			this.prUpdateMargins(argMargins);
-			newMarginSums = this.calcViewMargSums(margins);
+			// update view %s
+			viewDimsPct = this.calcViewDimsPct(viewDims);
+			this.changed(\viewDimsPct, viewDimsPct);
 
-			if(newMarginSums != marginSums, {
-				marginSums = newMarginSums;
-				viewDims = this.calcViewDims(margins);
-				this.changed(\viewDims, viewDims);
-
-				viewDimsPct = this.calcViewDimsPct(viewDims);
-				this.changed(\viewDimsPct, viewDimsPct);
-
-				viewPosSpecs = this.calcViewPosSpecs(marginSums);
-			});
-
-			newViewPos = this.calcViewPosPct(margins, viewPosSpecs);
-
-			if(newViewPos != viewPos, {
-				viewPos = newViewPos;
-				this.changed(\viewPos, viewPos);
-			});
-		});
+			// recalc pos %s
+			viewPosPct = this.calcViewPosPct(margins, viewPosPctSpecs);
+			this.changed(\viewPosPct, viewPosPct);
+		};
 		^this
 	}
-
 }
 
 
@@ -363,8 +344,8 @@ WinBlockGui {
 
 		// change view position
 		slider2D.action = { |view|
-			model.viewPos_(view.x, view.y);
-			this.postVerbose("View Pos", model.viewPos);
+			model.viewPosPct_(view.x, view.y);
+			this.postVerbose("View Pos", model.viewPosPct);
 		};
 
 		sliderX.action = { |view|
@@ -382,11 +363,11 @@ WinBlockGui {
 		button.action = {|view|
 			// centre view margins
 			model.centreView;
-			this.postVerbose("View Pos", model.viewPos);
+			this.postVerbose("View Pos", model.viewPosPct);
 		};
 
 		// set initial values
-		this.update(model, \viewPos, model.viewPos);
+		this.update(model, \viewPosPct, model.viewPosPct);
 		this.update(model, \viewDimsPct, model.viewDimsPct);
 
 		window.front;
@@ -419,8 +400,8 @@ WinBlockGui {
 
 	update {|obj, what, val|
 		case
-		{what == \viewPos} {
-			slider2D.setXY(model.viewPos[0], model.viewPos[1]);
+		{what == \viewPosPct} {
+			slider2D.setXY(model.viewPosPct[0], model.viewPosPct[1]);
 		}
 		{what == \viewDimsPct } {
 			sliderX.value = model.viewDimsPct[0];
