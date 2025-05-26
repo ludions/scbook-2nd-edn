@@ -112,32 +112,30 @@ examples::
 
 code::
 
-
-// Simple example with all arguments specified
-
-// Create a custom window first
+// Make a window to hold the view
 w = Window.new.front;
 
-// Create ViewCentralOV with all arguments
+// Pass the window into a ViewCentralOV instance
 // |dims, margins, usrViewBool, win|
 v = ViewCentralOV.new([450, 340], [30, 20],  true, w)
 
 
 (
-// Use forwarded methods mechanism
+// See ViewCentralModel for these methods
 v.winName_("ViewCentralOV Example");
 v.viewCol_(Color.grey(0.9));
 v.marginCol_(Color.yellow(0.9));
 v.resizeWin(500, 400);
 v.winCol_(Color.blue);
-// Add content to the view
+
+// Draw in the UserView
 v.contentView.drawFunc = {
-Pen.fillColor = Color.blue;
-Pen.fillOval(Rect(150, 100, 100, 100));
-Pen.stringCenteredIn(
-    "ViewCentralOV example",
-    Rect(0, 0, v.contentView.bounds.width, 30)
-);
+	Pen.fillColor = Color.blue;
+	Pen.fillOval(Rect(150, 100, 100, 100));
+	Pen.stringCenteredIn(
+		"ViewCentralOV example",
+		Rect(0, 0, v.contentView.bounds.width, 30)
+	);
 };
 v.contentView.refresh;
 )
@@ -145,12 +143,19 @@ v.contentView.refresh;
 // Close the window
 v.close;
 
-// Automatic recreation
+// Demonstrate recreation of view
 v = ViewCentralOV.new;
+v.marginCol_(Color.yellow);
 v.autoRecreate_(true);
 
 v.close;
 
-// Window automatically recreates
-v.marginCol_(Color.yellow);
+// Window is automatically recreated when a method called
+v.viewCol_(Color.green);
+
+v.close;
+
+// Or recreate explicityly
+v.recreateView
+
 ::
