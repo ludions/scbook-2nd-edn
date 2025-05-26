@@ -340,25 +340,25 @@ WinBlockGui {
 		// change view position
 		slider2D.action = { |view|
 			model.viewPosPct_(view.x, view.y);
-			this.postVerbose("View Pos", model.viewPosPct);
+			this.postVerbose("Pos", model.viewPos, model.viewPosPct);
 		};
 
 		sliderX.action = { |view|
 			// change viewSize width
 			model.viewDimsPct_(x: view.value);
-			this.postVerbose("View Pct", model.viewDimsPct);
+			this.postVerbose("Dims", model.viewDims, model.viewDimsPct);
 		};
 
 		sliderY.action = { |view|
 			// change viewSize height
 			model.viewDimsPct_(y: view.value);
-			this.postVerbose("View Pct", model.viewDimsPct);
+			this.postVerbose("Dims", model.viewDims, model.viewDimsPct);
 		};
 
 		button.action = {|view|
 			// centre view margins
 			model.centreView;
-			this.postVerbose("View Pos", model.viewPosPct);
+			this.postVerbose("Pos", model.viewPos, model.viewPosPct);
 		};
 
 		// set initial values
@@ -370,9 +370,10 @@ WinBlockGui {
 		^window // rtn win
 	}
 
-	postVerbose { |label, value, precision = 0.01|
+	postVerbose { |label, dims, pct, precision = 0.01|
+		var displayDims = dims.round(1.0).asInteger;
 		if(verbose) {
-			format("% : %", label, value.round(precision)).postln;
+			format("%: % %", label, displayDims, pct.round(precision)).postln;
 		}
 	}
 
